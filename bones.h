@@ -15,11 +15,8 @@
 #define MAX_VXCOUNT                4   /* Max vertex count per bone */
 #define MAX_MESHVXCOUNT            (MAX_VXCOUNT * MAX_BONECOUNT) /* Max vertices in mesh */
 
-
-/* Define your own value for M_PI if not available */
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
-#define RAD2DEG(a)                 (((a) * 180.0) / M_PI) /* Convert radians to degrees */
 #endif
 
 typedef struct {
@@ -92,7 +89,7 @@ int boneInterAnimation(Bone *root, Bone *root2, int time, float inter);
 
 void boneListNames(Bone *root, char names[MAX_BONECOUNT][99]);
 
-void DrawGLBone(Bone *root, int selected);
+void DrawBones(Bone *root);
 
 Bone *boneLoadStructure(const char *path);
 
