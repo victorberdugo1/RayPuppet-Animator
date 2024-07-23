@@ -362,24 +362,6 @@ Bone *boneAddChild(Bone *root, float x, float y, float a, float l, uint8_t flags
     return root;
 }
 
-Texture2D getPartTexture(int tex)
-{
-    int cont;
-    int ab = 0;
-    int ord = 0;
-    for (cont = 0; cont < tex; cont++) {
-        ab++;
-        if (ab > 3) {
-            ab = 0;
-            ord++;
-        }
-    }
-    cut_x = (float)ab / 4.0f; // cortar en 4 partes
-    cut_y = (float)ord / 4.0f;
-    cut_xb = (float)(ab + 1) / 4.0f;
-    cut_yb = (float)(ord + 1) / 4.0f;
-}
-
 void DrawBones(Bone *root) {
     if (root == NULL) return;
 
@@ -466,7 +448,7 @@ Vector2 ApplyBoneTransformation(Bone *bone, Vector2 vertexPos) {
     return transformedPos;
 }
 
-void meshDraw(t_mesh *mesh, Bone *root, int time)
+/*void meshDraw(t_mesh *mesh, Bone *root, int time)
 {
 	for (int i = 0; i < mesh->vertexCount; i++) {
 		BoneVertex *boneVertex = &mesh->v[i];
@@ -485,5 +467,44 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
 		Vector2 origin = {50.0f, 50.0f};
 		DrawTexturePro(texture, sourceRect, destRect, origin, 0.0f, WHITE);
 	}
+}
+*/
+
+void getPartTexture(int tex) {
+    int ab = tex % 4;  // Obtenemos la columna
+    int ord = tex / 4; // Obtenemos la fila
+
+    cut_x = (float)ab / 4.0f; // Cortar en 4 partes
+    cut_y = (float)ord / 4.0f;
+    cut_xb = (float)(ab + 1) / 4.0f;
+    cut_yb = (float)(ord + 1) / 4.0f;
+}
+
+void meshDraw(t_mesh *mesh, Bone *root, int time) {
+    for (int i = 0; i < mesh->vertexCount; i++) {
+        BoneVertex *boneVertex = &mesh->v[i];
+        Vector2 transformedPos = {0.0f, 0.0f};
+        for (int j = 0; j < boneVertex->boneCount; j++) {
+            Bone *bone = boneVertex->bone[j];
+            if (bone) {
+                Vector2 boneTransformedPos = ApplyBoneTransformation(bone, (Vector2){boneVertex->v.x, boneVertex->v.y});
+                transformedPos.x += boneTransformedPos.x * boneVertex->weight[j];
+                transformedPos.y += boneTransformedPos.y * boneVertex->weight[j];
+            }
+        }
+        // Obtener la textura correspondiente
+        Texture2D texture = textures[boneVertex->t];
+        // Obtener las coordenadas de corte
+        getPartTexture(boneVertex->t);
+        Rectangle sourceRect = {
+            cut_x * texture.width,
+            cut_y * texture.height,
+            (cut_xb - cut_x) * texture.width,
+            (cut_yb - cut_y) * texture.height
+        };
+        Rectangle destRect = {transformedPos.x, transformedPos.y, 100.0f, 100.0f};
+        Vector2 origin = {50.0f, 50.0f};
+        DrawTexturePro(texture, sourceRect, destRect, origin, 0.0f, WHITE);
+    }
 }
 

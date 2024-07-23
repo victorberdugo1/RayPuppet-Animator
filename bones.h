@@ -105,7 +105,7 @@ void getBoneMatrix(Bone *b, Matrix *mat);
 
 float getBoneAngle(Bone *b);
 
-Texture2D getPartTexture(int tex);
+void getPartTexture(int tex);
 
 void meshDraw(t_mesh *mesh, Bone *root, int time);
 
