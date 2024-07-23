@@ -107,8 +107,13 @@ int main(void)
         //rlEnableDepthTest();
         //rlEnableColorBlend();
         meshDraw(&body, root, frameNum);
-        //DrawBones(root);
-        //DrawText("Sample Text", 10, 10, 20, DARKGRAY);
+        DrawBones(root);
+
+		if (!frameNum) {
+        	PrintSkeletonInfo(root, &body);
+            frameNum = 1; // Marca la acción como realizada
+        }
+		//DrawText("Sample Text", 10, 10, 20, DARKGRAY);
         EndDrawing();
     }
 	CloseWindow();

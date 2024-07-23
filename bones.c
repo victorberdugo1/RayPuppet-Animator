@@ -256,20 +256,6 @@ Bone *boneChangeAnimation(Bone *root, char *path) {
     return root;
 }
 
-void getBoneMatrix(Bone *b, Matrix *mat) {
-    if (!b) return;
-    *mat = MatrixIdentity();
-    if (b->parent) {
-        Matrix parentMat = MatrixIdentity();
-        getBoneMatrix(b->parent, &parentMat);
-        *mat = MatrixMultiply(*mat, parentMat);
-    }
-    Matrix translation = MatrixTranslate(b->x, b->y, 0.0f);
-    Matrix rotation = MatrixRotateZ(b->a);
-    *mat = MatrixMultiply(*mat, translation);
-    *mat = MatrixMultiply(*mat, rotation);
-}
-
 float getBoneAngle(Bone *b)
 {
 	if (!b)
@@ -449,40 +435,55 @@ void meshLoadData(char *file, t_mesh *mesh, Bone *root) {
     fclose(fd);
 }
 
-void meshDraw(t_mesh *mesh, Bone *root, int time)
-{
-    int screenWidth = GetScreenWidth();
-    int screenHeight = GetScreenHeight();
-    //textures[0] = LoadTexture("Textures/Skel_1.png");
-    // Obtener las dimensiones de la textura
-    int textureWidth = 512;
-    int textureHeight = 512;
+void LoadTextures(void) {
+    char path[64];
+    int count = 19;
 
-    // Calcular la posición para centrar la textura
-    Vector2 position = { (screenWidth - textureWidth) / 2.0f, (screenHeight - textureHeight) / 2.0f };
-
-    // Dibujar la textura en la posición calculada
-    DrawTexture(textures[0], position.x, position.y, WHITE);
-}
-
-void LoadTextures(void){
-	char path[64];
-	char *resultPath;
-    int count = contTxt;
-    int i;
-	textures[0] = LoadTexture("Textures/Skel_1.png");
-
-    resultPath = "Textures/Skel";
-    for (i = 1; i <= count; i++)
-    {
-        sprintf(path, "%s_%d.png", resultPath, i);
+    for (int i = 1; i <= count; i++) {
+        sprintf(path, "Textures/Skel_%d.png", i);
         Image image = LoadImage(path);
-        if (image.data == NULL)
-        {
-            printf("Error: No se pudo cargar la imagen '%s'\n", path);
-            continue; // Continúa con la siguiente textura
+        if (image.data == NULL) {
+            continue;
         }
         textures[i] = LoadTextureFromImage(image);
         UnloadImage(image);
     }
 }
+
+Matrix GetBoneMatrix(Bone *bone) {
+    Matrix mat = MatrixIdentity();
+    mat = MatrixMultiply(mat, MatrixRotateZ(bone->a));
+    mat = MatrixMultiply(mat, MatrixTranslate(bone->x, bone->y, 0.0f));
+    return mat;
+}
+
+Vector2 ApplyBoneTransformation(Bone *bone, Vector2 vertexPos) {
+    float cosAngle = cos(bone->a);
+    float sinAngle = sin(bone->a);
+    Vector2 transformedPos;
+    transformedPos.x = bone->x + vertexPos.x * cosAngle - vertexPos.y * sinAngle;
+    transformedPos.y = bone->y + vertexPos.x * sinAngle + vertexPos.y * cosAngle;
+    return transformedPos;
+}
+
+void meshDraw(t_mesh *mesh, Bone *root, int time)
+{
+	for (int i = 0; i < mesh->vertexCount; i++) {
+		BoneVertex *boneVertex = &mesh->v[i];
+		Vector2 transformedPos = {0.0f, 0.0f};
+		for (int j = 0; j < boneVertex->boneCount; j++) {
+			Bone *bone = boneVertex->bone[j];
+			if (bone) {
+				Vector2 boneTransformedPos = ApplyBoneTransformation(bone, (Vector2){boneVertex->v.x, boneVertex->v.y});
+				transformedPos.x += boneTransformedPos.x * boneVertex->weight[j];
+				transformedPos.y += boneTransformedPos.y * boneVertex->weight[j];
+			}
+		}
+		Texture2D texture = textures[boneVertex->t];
+		Rectangle sourceRect = {0, 0, (float)texture.width, (float)texture.height};
+		Rectangle destRect = {transformedPos.x, transformedPos.y, 100.0f, 100.0f};
+		Vector2 origin = {50.0f, 50.0f};
+		DrawTexturePro(texture, sourceRect, destRect, origin, 0.0f, WHITE);
+	}
+}
+
