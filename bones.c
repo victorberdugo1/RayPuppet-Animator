@@ -59,6 +59,7 @@ Bone *boneFindByName(Bone *root, char *name)
 	return NULL;
 }
 
+/*
 int boneAnimate(Bone *root, Bone *introot, int time, float intindex) {
     if (!root) return 0;
     for (int i = 0; i < root->keyframeCount; i++) {
@@ -87,10 +88,11 @@ int boneAnimate(Bone *root, Bone *introot, int time, float intindex) {
             others = 1;
     }
     return others;
-}
+}*/
 
-int bonePlusAnimate(Bone *root, Bone *introot, int time, float intindex) {
+int boneAnimate(Bone *root, Bone *introot, int time, float intindex) {
     if (!root) return 0;
+    int keyframeUpdated = 0;
     for (int i = 0; i < root->keyframeCount; i++) {
         if (root->keyframe[i].time == time) {
             if (i < root->keyframeCount - 1) {
@@ -98,20 +100,75 @@ int bonePlusAnimate(Bone *root, Bone *introot, int time, float intindex) {
                 root->depth = root->keyframe[i].layer;
                 root->collition = root->keyframe[i].coll;
                 root->frame = root->keyframe[i].partex;
-                root->offA = (root->keyframe[i + 1].angle - root->keyframe[i].angle) / tim;
-                root->offL = (root->keyframe[i + 1].length - root->keyframe[i].length) / tim;
+                root->offA = ((root->keyframe[i + 1].angle - root->keyframe[i].angle) +
+                    ((introot->keyframe[i + 1].angle - introot->keyframe[i].angle) -
+                    (root->keyframe[i + 1].angle - root->keyframe[i].angle)) * intindex) / tim;
+                root->offL = ((root->keyframe[i + 1].length - root->keyframe[i].length) +
+                    ((introot->keyframe[i + 1].length - introot->keyframe[i].length) -
+                    (root->keyframe[i + 1].length - root->keyframe[i].length)) * intindex) / tim;
             } else {
                 root->offA = root->offL = 0;
             }
-        } else if (root->keyframe[i].time > time) return 1;
+            keyframeUpdated = 1;
+            break;
+        } else if (root->keyframe[i].time > time) {
+            break;
+        }
     }
-    root->a += root->offA;
-    root->l += root->offL;
+
+    if (keyframeUpdated) {
+        root->a += root->offA;
+        root->l += root->offL;
+        printf("Updated bone %s: angle=%.2f, length=%.2f, offA=%.2f, offL=%.2f\n", root->name, root->a, root->l, root->offA, root->offL);
+    }
+
     int others = 0;
     for (int i = 0; i < root->childCount; i++) {
-        if (bonePlusAnimate(root->child[i], introot->child[i], time, intindex))
+        if (boneAnimate(root->child[i], introot->child[i], time, intindex)) {
             others = 1;
+        }
     }
+    return keyframeUpdated || others;
+}
+
+
+int bonePlusAnimate(Bone *root, Bone *introot, int time, float intindex) {
+    if (!root) return 0;
+
+    int i, others = 0;
+    float ang, len, tim;
+
+    for (i = 0; i < root->keyframeCount; i++) {
+        if (root->keyframe[i].time == time) {
+            if (i != root->keyframeCount - 1) {
+                root->depth = root->keyframe[i].layer;
+                root->collition = root->keyframe[i].coll;
+                root->frame = root->keyframe[i].partex;
+
+                tim = root->keyframe[i + 1].time - root->keyframe[i].time;
+                ang = root->keyframe[i + 1].angle - root->keyframe[i].angle;
+                len = root->keyframe[i + 1].length - root->keyframe[i].length;
+
+                root->offA = ang / tim;
+                root->offL = len / tim;
+            } else {
+                root->offA = 0;
+                root->offL = 0;
+            }
+        } else if (root->keyframe[i].time > time) {
+            others = 1;
+        }
+    }
+
+    root->a += root->offA;
+    root->l += root->offL;
+
+    for (i = 0; i < root->childCount; i++) {
+        if (bonePlusAnimate(root->child[i], introot->child[i], time, intindex)) {
+            others = 1;
+        }
+    }
+
     return others;
 }
 
@@ -255,14 +312,7 @@ Bone *boneChangeAnimation(Bone *root, char *path) {
     }
     return root;
 }
-
-float getBoneAngle(Bone *b)
-{
-	if (!b)
-		return 0;
-	return b->a + getBoneAngle(b->parent);
-}
-
+/*
 Bone *boneLoadStructure(const char *path) {
     Bone *root = NULL, *temp = NULL;
     FILE *file;
@@ -325,7 +375,53 @@ Bone *boneLoadStructure(const char *path) {
     }
     fclose(file);
     return root;
+}*/
+
+Bone* boneLoadStructure(const char *path) {
+    Bone *root = NULL, *temp = NULL;
+    FILE *file;
+    float x, y, angle, length;
+    int layer, depth, actualLevel = 0, flags, partex, coll;
+    uint32_t time;
+    char name[99], depthStr[99], buffer[4096], animBuf[4096], *ptr, *token, *rest;
+
+    if (!(file = fopen(path, "r"))) {
+        fprintf(stderr, "Can't open file %s for reading\n", path);
+        return NULL;
+    }
+
+    while (fgets(buffer, sizeof(buffer), file)) {
+        if (strlen(buffer) < 3)
+            continue;
+
+        memset(animBuf, 0, sizeof(animBuf));
+        sscanf(buffer, "%s %f %f %f %f %d %s %[^\n]", depthStr, &x, &y, &angle, &length, &flags, name, animBuf);
+        depth = strlen(depthStr) - 1;
+
+        if (depth < 0 || depth > MAX_CHCOUNT) {
+            fprintf(stderr, "Wrong bone depth (%s)\n", depthStr);
+            fclose(file);
+            return NULL;
+        }
+
+        for (; actualLevel > depth; actualLevel--)
+            temp = temp->parent;
+
+        if (!root && depth == 0) {
+            root = boneAddChild(NULL, x, y, angle, length, flags, name);
+            temp = root;
+        } else {
+            temp = boneAddChild(temp, x, y, angle, length, flags, name);
+        }
+
+        actualLevel++;
+    }
+
+    fclose(file);
+    return root;
 }
+
+
 
 Bone *boneAddChild(Bone *root, float x, float y, float a, float l, uint8_t flags, char *name) {
     Bone *t;
@@ -439,72 +535,79 @@ Matrix GetBoneMatrix(Bone *bone) {
     return mat;
 }
 
-Vector2 ApplyBoneTransformation(Bone *bone, Vector2 vertexPos) {
-    float cosAngle = cos(bone->a);
-    float sinAngle = sin(bone->a);
-    Vector2 transformedPos;
-    transformedPos.x = bone->x + vertexPos.x * cosAngle - vertexPos.y * sinAngle;
-    transformedPos.y = bone->y + vertexPos.x * sinAngle + vertexPos.y * cosAngle;
-    return transformedPos;
-}
-
-/*void meshDraw(t_mesh *mesh, Bone *root, int time)
-{
-	for (int i = 0; i < mesh->vertexCount; i++) {
-		BoneVertex *boneVertex = &mesh->v[i];
-		Vector2 transformedPos = {0.0f, 0.0f};
-		for (int j = 0; j < boneVertex->boneCount; j++) {
-			Bone *bone = boneVertex->bone[j];
-			if (bone) {
-				Vector2 boneTransformedPos = ApplyBoneTransformation(bone, (Vector2){boneVertex->v.x, boneVertex->v.y});
-				transformedPos.x += boneTransformedPos.x * boneVertex->weight[j];
-				transformedPos.y += boneTransformedPos.y * boneVertex->weight[j];
-			}
-		}
-		Texture2D texture = textures[boneVertex->t];
-		Rectangle sourceRect = {0, 0, (float)texture.width, (float)texture.height};
-		Rectangle destRect = {transformedPos.x, transformedPos.y, 100.0f, 100.0f};
-		Vector2 origin = {50.0f, 50.0f};
-		DrawTexturePro(texture, sourceRect, destRect, origin, 0.0f, WHITE);
-	}
-}
-*/
-
 void getPartTexture(int tex) {
-    int ab = tex % 4;  // Obtenemos la columna
-    int ord = tex / 4; // Obtenemos la fila
-
-    cut_x = (float)ab / 4.0f; // Cortar en 4 partes
+    int ab = tex % 4;
+    int ord = tex / 4;
+    cut_x = (float)ab / 4.0f;
     cut_y = (float)ord / 4.0f;
     cut_xb = (float)(ab + 1) / 4.0f;
     cut_yb = (float)(ord + 1) / 4.0f;
 }
 
+float getBoneAngle(Bone* b) {
+    if (!b || !b->parent) return 0.0f;
+    
+    Bone* b2 = b->parent;
+    float dx = b2->x - b->x;
+    float dy = b2->y - b->y;
+    float angle = atan2(dy, dx) * 180.0f / M_PI;
+    
+    if (angle < 0.0f) angle += 360.0f;
+    
+    return (angle - 90.0f);
+}
+
+Vector2 AplBoneTrans(Bone *bone, Vector2 vertex) {
+    float totalAngle = getBoneAngle(bone);
+    float radAngle = totalAngle * M_PI / 180.0f;
+
+    Vector2 transformed;
+    transformed.x = bone->x + vertex.x * cos(radAngle) - vertex.y * sin(radAngle);
+    transformed.y = bone->y + vertex.x * sin(radAngle) + vertex.y * cos(radAngle);
+    return transformed;
+}
+
 void meshDraw(t_mesh *mesh, Bone *root, int time) {
     for (int i = 0; i < mesh->vertexCount; i++) {
         BoneVertex *boneVertex = &mesh->v[i];
-        Vector2 transformedPos = {0.0f, 0.0f};
-        for (int j = 0; j < boneVertex->boneCount; j++) {
-            Bone *bone = boneVertex->bone[j];
-            if (bone) {
-                Vector2 boneTransformedPos = ApplyBoneTransformation(bone, (Vector2){boneVertex->v.x, boneVertex->v.y});
-                transformedPos.x += boneTransformedPos.x * boneVertex->weight[j];
-                transformedPos.y += boneTransformedPos.y * boneVertex->weight[j];
-            }
-        }
-        // Obtener la textura correspondiente
-        Texture2D texture = textures[boneVertex->t];
-        // Obtener las coordenadas de corte
-        getPartTexture(boneVertex->t);
-        Rectangle sourceRect = {
+        Vector2 trfrmedPos = {0.0f, 0.0f};
+        float totalAngle = 0.0f;
+        float scaleFactor = 1.0f;
+		Texture2D texture;
+		int	partex;
+
+		for (int j = 0; j < boneVertex->boneCount; j++) {
+			Bone *bone = boneVertex->bone[j];
+			if (bone) {
+				Vector2 boneTrfrmedPos = AplBoneTrans(bone, (Vector2){boneVertex->v.x, boneVertex->v.y});
+				trfrmedPos.x = boneTrfrmedPos.x;
+				trfrmedPos.y = boneTrfrmedPos.y;
+
+				totalAngle = getBoneAngle(bone);
+				scaleFactor = boneVertex->weight[j];
+
+				partex = boneFindByName(root, bone->name)->keyframe[0].partex;
+				//printf("%s  %d\n",bone->name,root->keyframe[0].partex);
+
+			}
+		}
+		texture = textures[boneVertex->t];
+		getPartTexture(partex);
+
+		Rectangle sourceRect = {
             cut_x * texture.width,
             cut_y * texture.height,
             (cut_xb - cut_x) * texture.width,
             (cut_yb - cut_y) * texture.height
         };
-        Rectangle destRect = {transformedPos.x, transformedPos.y, 100.0f, 100.0f};
-        Vector2 origin = {50.0f, 50.0f};
-        DrawTexturePro(texture, sourceRect, destRect, origin, 0.0f, WHITE);
+
+        float destWidth = 100.0f * scaleFactor;
+        float destHeight = 100.0f * scaleFactor;
+
+        Rectangle destRect = {trfrmedPos.x, trfrmedPos.y, destWidth, destHeight};
+        Vector2 origin = {destWidth / 2.0f, destHeight / 2.0f};
+
+        DrawTexturePro(texture, sourceRect, destRect, origin, totalAngle, WHITE);
     }
 }
 

@@ -11,7 +11,7 @@
 #define BONE_ABSOLUTE_ANGLE        0x01 /* Bone angle is absolute or relative to parent */
 #define BONE_ABSOLUTE_POSITION     0x02 /* Bone position is absolute in the world or relative to the parent */
 #define BONE_ABSOLUTE              (BONE_ABSOLUTE_ANGLE | BONE_ABSOLUTE_POSITION)
-#define MAX_KFCOUNT                256 /* Max keyframe count */
+#define MAX_KFCOUNT                4096 /* Max keyframe count */
 #define MAX_VXCOUNT                4   /* Max vertex count per bone */
 #define MAX_MESHVXCOUNT            (MAX_VXCOUNT * MAX_BONECOUNT) /* Max vertices in mesh */
 
