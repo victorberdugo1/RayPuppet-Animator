@@ -574,7 +574,7 @@ void meshDraw(t_mesh *mesh, Bone *root, int time) {
         float totalAngle = 0.0f;
         float scaleFactor = 1.0f;
 		Texture2D texture;
-		int	partex;
+		int	partex[2];
 
 		for (int j = 0; j < boneVertex->boneCount; j++) {
 			Bone *bone = boneVertex->bone[j];
@@ -582,17 +582,17 @@ void meshDraw(t_mesh *mesh, Bone *root, int time) {
 				Vector2 boneTrfrmedPos = AplBoneTrans(bone, (Vector2){boneVertex->v.x, boneVertex->v.y});
 				trfrmedPos.x = boneTrfrmedPos.x;
 				trfrmedPos.y = boneTrfrmedPos.y;
-
 				totalAngle = getBoneAngle(bone);
 				scaleFactor = boneVertex->weight[j];
 
-				partex = boneFindByName(root, bone->name)->keyframe[0].partex;
-				//printf("%s  %d\n",bone->name,root->keyframe[0].partex);
-
+				partex[j] = bone->frame;
+				printf("%s  %d\n",bone->name,bone->frame);
+				//partex = boneFindByName(root, mesh->v[j].bone[1]->name)->frame;
+				//getPartTexture(partex);
 			}
 		}
 		texture = textures[boneVertex->t];
-		getPartTexture(partex);
+		getPartTexture(partex[0]);
 
 		Rectangle sourceRect = {
             cut_x * texture.width,
