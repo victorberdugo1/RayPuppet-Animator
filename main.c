@@ -14,32 +14,34 @@
 
 uint32_t maxTime = 0;
 
-void animationLoadKeyframes(const char *path, Bone *root) {
-	FILE *file;
-	float angle, length;
-	int layer, partex, coll;
-	uint32_t time;
-	char name[100], buffer[4096], *ptr, *token, *rest;
-	Bone *bone;
+void animationLoadKeyframes(const char *path, Bone *root)
+{
+	FILE		*file;
+	float		angle, length;
+	int			layer, partex, coll;
+	uint32_t	time;
+	char		name[100], buffer[4096], *ptr, *token, *rest;
+	Bone		*bone;
 
-	if (!(file = fopen(path, "r"))) {
+	if (!(file = fopen(path, "r")))
+	{
 		fprintf(stderr, "Can't open file %s for reading\n", path);
 		return;
 	}
-
-	while (fgets(buffer, sizeof(buffer), file)) {
+	while (fgets(buffer, sizeof(buffer), file))
+	{
 		if (strlen(buffer) < 3)
 			continue;
-
 		sscanf(buffer, "%s", name);
 		bone = boneFindByName(root, name);
-		if (!bone) {
+		if (!bone)
+		{
 			fprintf(stderr, "Bone %s not found\n", name);
 			continue;
 		}
-
 		ptr = buffer + strlen(name) + 1;
-		while ((token = strtok_r(ptr, " ", &rest))) {
+		while ((token = strtok_r(ptr, " ", &rest)))
+		{
 			ptr = NULL;
 			sscanf(token, "%d", &time);
 			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
@@ -52,12 +54,11 @@ void animationLoadKeyframes(const char *path, Bone *root) {
 			sscanf(token, "%f", &angle);
 			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
 			sscanf(token, "%f", &length);
-
-			if (bone->keyframeCount >= MAX_KFCOUNT) {
+			if (bone->keyframeCount >= MAX_KFCOUNT)
+			{
 				fprintf(stderr, "Warning: Keyframe count exceeded for bone %s\n", name);
 				continue;
 			}
-
 			Keyframe *k = &(bone->keyframe[bone->keyframeCount]);
 			k->time = time;
 			k->partex = partex;
@@ -66,14 +67,12 @@ void animationLoadKeyframes(const char *path, Bone *root) {
 			k->angle = angle;
 			k->length = length;
 			bone->keyframeCount++;
-
-			if (time > maxTime) {
+			if (time > maxTime)
+			{
                 maxTime = time;
             }
-			printf("maxTime=%d\n",maxTime );
 		}
 	}
-
 	fclose(file);
 }        
 
@@ -90,7 +89,6 @@ int main(void)
 	Bone *root = boneLoadStructure("Bbs_Skel.txt");
 	root->x = GetScreenWidth() / 2.0f;
 	root->y = GetScreenHeight() / 1.0f;
-	Bone *introot = boneLoadStructure("Bbs_Skel.txt");
 
 	// Load mesh data
 	char names[MAX_BONECOUNT][99] = {0};
@@ -115,17 +113,13 @@ int main(void)
 	{
 		if (animating)
 		{
-			printf("before animation: framenum = %d\n", root->keyframeCount);
-			boneAnimate(root, introot, frameNum, intindex);
-			if (frameNum >= maxTime) // Reiniciar el frameNum cuando alcanza el frame máximo
+
+			if (++frameNum == maxTime) // Reiniciar el frameNum cuando alcanza el frame máximo
 			{
 				frameNum = 0;
-			}
-			frameNum++;
+			}			
+			boneAnimate(root, frameNum);
 		}
-
-		printf("framenum = %d\n", frameNum);
-
 	// drawing and rendering logic
 	BeginDrawing();
 	ClearBackground(GRAY);

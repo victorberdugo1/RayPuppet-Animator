@@ -1,4 +1,4 @@
-85 Skel 19
+19 Skel 19
 1 0.0 50.0 Abs 0.0 Bone4 1.0
 2 0.0 40.0 Absuber 0.0 Bone5 1.2
 3 10.0 30.0 Chest 0.0 Bone6 1.0
@@ -6,15 +6,15 @@
 5 10.0 20.0 Head 0.0 EndHead 0.8
 6 10.0 35.0 ArmR 0.0 ElbowR 1.0
 7 5.0 35.0 ArmR2 0.0 WristR 0.8
-8 0.0 25.0 HandR 0.5 EndArmR 0.6
-9 0.0 50.0 ArmL 0.5 ElbowL 0.9
-10 0.0 40.0 ArmL2 0.5 WristL 0.7
-11 5.0 35.0 HandL 0.5 EndArmL 0.55
-12 0.0  25.0 Hip 0.5 Bone13 0.9
-13 0.0  65.0 LegR 0.5 KneeR 1.2
-14 0.0  60.0 LegR2 0.5 AnkleR 1.2
-15 25.0 25.0 FootR 0.5 EndLegR 1.0
-16 0.0 15.0 Hip2 0.5 Bone16 0.75
-17 0.0  65.0 LegL 0.5 KneeL 1.2
-18 0.0  60.0 LegL2 0.5 AnkleL 1.2
-19 40.0 40.0 FootL 0.5 EndLegL 1.0
+8 0.0 25.0 HandR 0.0 EndArmR 0.6
+9 0.0 50.0 ArmL 0.0 ElbowL 0.9
+10 0.0 40.0 ArmL2 0.0 WristL 0.7
+11 5.0 35.0 HandL 0.0 EndArmL 0.55
+12 0.0  25.0 Hip 0.0 Bone13 0.9
+13 0.0  65.0 LegR 0.0 KneeR 1.2
+14 0.0  60.0 LegR2 0.0 AnkleR 1.2
+15 25.0 25.0 FootR 0.0 EndLegR 1.0
+16 0.0 15.0 Hip2 0.0 Bone16 0.75
+17 0.0  65.0 LegL 0.0 KneeL 1.2
+18 0.0  60.0 LegL2 0.0 AnkleL 1.2
+19 40.0 40.0 FootL 0.0 EndLegL 1.0

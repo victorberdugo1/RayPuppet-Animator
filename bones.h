@@ -79,7 +79,7 @@ void LoadTextures(void);
 
 Bone *boneFindByName(Bone *root, char *name);
 
-int boneAnimate(Bone *root, Bone *introot, int time, float intindex);
+int boneAnimate(Bone *root, int time);
 
 int bonePlusAnimate(Bone *root, Bone *introot, int time, float intindex);
 
