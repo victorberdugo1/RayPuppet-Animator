@@ -8,7 +8,7 @@
 
 char		*currentName = NULL;
 BonesXY		bonesdata[MAX_BONECOUNT];
-Texture2D	textures[19];
+Texture2D	textures[20];
 int			coordenada,contTxt;
 float		cut_x,cut_y,cut_xb,cut_yb;
 char		nameFTx[99];
@@ -420,8 +420,8 @@ void DrawBones(Bone *root) {
         startPos.y + root->l * sin(root->a)
     };
 
-    DrawLineEx(startPos, endPos, 2.0f, GREEN);
-    DrawCircleV(startPos, 5, BLUE);
+	//DrawLineEx(startPos, endPos, 2.0f, GREEN);
+    //DrawCircleV(startPos, 5, BLUE);
 
     for (int i = 0; i < root->childCount; i++) {
         if (root->child[i] != NULL) {
@@ -497,6 +497,7 @@ void getPartTexture(int tex) {
     cut_yb = (float)(ord + 1) / 4.0f;
 }
 
+
 float getBoneAngle(Bone* b) {
     if (!b || !b->parent) return 0.0f;
     
@@ -520,7 +521,24 @@ Vector2 AplBoneTrans(Bone *bone, Vector2 vertex) {
     return transformed;
 }
 
+int compareVerticesByLayer(const void *a, const void *b) {
+    const BoneVertex *vertA = (const BoneVertex *)a;
+    const BoneVertex *vertB = (const BoneVertex *)b;
+
+    // Obtener la capa del hueso principal de cada vértice
+    int layerA = vertA->bone[0]->keyframe[vertA->bone[0]->frame].layer;
+    int layerB = vertB->bone[0]->keyframe[vertB->bone[0]->frame].layer;
+
+    // Comparar las capas: devolvemos -1 si layerA < layerB para ordenar de menor a mayor
+    if (layerA < layerB) return -1;
+    if (layerA > layerB) return 1;
+    return 0;
+}
+
 void meshDraw(t_mesh *mesh, Bone *root, int time) {
+
+	qsort(mesh->v, mesh->vertexCount, sizeof(BoneVertex), compareVerticesByLayer);
+
     for (int i = 0; i < mesh->vertexCount; i++) {
         BoneVertex *boneVertex = &mesh->v[i];
         Vector2 trfrmedPos = {0.0f, 0.0f};
@@ -554,12 +572,11 @@ void meshDraw(t_mesh *mesh, Bone *root, int time) {
             (cut_yb - cut_y) * texture.height
         };
 
-        float destWidth = 100.0f * scaleFactor;
-        float destHeight = 100.0f * scaleFactor;
-		
-        Rectangle destRect = {trfrmedPos.x, trfrmedPos.y, destWidth, destHeight};
-        Vector2 origin = {destWidth / 2.0f, destHeight / 2.0f};
+		float destWidth = 100.0f * scaleFactor;
+		float destHeight = 100.0f * scaleFactor;
 
-        DrawTexturePro(texture, sourceRect, destRect, origin, totalAngle, WHITE);
-    }
+		Rectangle destRect = {trfrmedPos.x, trfrmedPos.y, destWidth, destHeight};
+		Vector2 origin = {destWidth / 2.0f, destHeight / 2.0f};
+		DrawTexturePro(texture, sourceRect, destRect, origin, totalAngle, WHITE);
+	}
 }

@@ -2,6 +2,7 @@
 //cc main.c -o main libraylib.a -lm 
 //cc main.c bones.c -o main -L. -lraylib -lm -ldl -lpthread -lGL -lX11
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
@@ -77,7 +78,7 @@ void animationLoadKeyframes(const char *path, Bone *root)
 }        
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	// Initialization of window and rendering settings
 	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Bone Animation Example");
@@ -108,23 +109,45 @@ int main(void)
 	float intindex = 0.0f;
 	float alocintp = 0.0f;
 
+	if (argc > 1)
+    {
+        maxTime = atoi(argv[1]);
+    }
 	// Main game loop
 	while (!WindowShouldClose())
 	{
-		if (animating)
-		{
+        if (animating)
+        {
+            // Puedes usar un temporizador para avanzar el frame
+			static float frameTimer = 0.0f;
+			frameTimer += GetFrameTime();
 
-			if (++frameNum == maxTime) // Reiniciar el frameNum cuando alcanza el frame máximo
+			// Cambiar el frame cada 0.1 segundos (ajusta este valor según sea necesario)
+			if (frameTimer >= 0.02f)
 			{
-				frameNum = 0;
-			}			
-			boneAnimate(root, frameNum);
-		}
-	// drawing and rendering logic
-	BeginDrawing();
-	ClearBackground(GRAY);
-	meshDraw(&body, root, frameNum);
+				frameTimer = 0.0f;
+				if (frameNum >= maxTime) //eNum >= maxTime) Reinicia el frameNum cuando alcanza el máximo
+				{
+					frameNum = 0;
+					if (argc > 1)
+					{
+						frameNum = maxTime;
+					}
+				}
+				boneAnimate(root, frameNum); // Actualiza la animación
+				frameNum++;
+
+			}
+        }		
+		// drawing and rendering logic
+		BeginDrawing();
+		ClearBackground(GRAY);
+		meshDraw(&body, root, frameNum);
 		DrawBones(root);
+
+		// Muestra el número de frame actual
+        DrawText(TextFormat("Frame Number: %d", frameNum), 10, 10, 20, WHITE);
+
 		EndDrawing();
 	}
 
