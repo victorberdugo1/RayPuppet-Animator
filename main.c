@@ -13,75 +13,10 @@
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
 
-uint32_t maxTime = 0;
-
-void animationLoadKeyframes(const char *path, Bone *root)
-{
-	FILE		*file;
-	float		angle, length;
-	int			layer, partex, coll;
-	uint32_t	time;
-	char		name[100], buffer[4096], *ptr, *token, *rest;
-	Bone		*bone;
-
-	if (!(file = fopen(path, "r")))
-	{
-		fprintf(stderr, "Can't open file %s for reading\n", path);
-		return;
-	}
-	while (fgets(buffer, sizeof(buffer), file))
-	{
-		if (strlen(buffer) < 3)
-			continue;
-		sscanf(buffer, "%s", name);
-		bone = boneFindByName(root, name);
-		if (!bone)
-		{
-			fprintf(stderr, "Bone %s not found\n", name);
-			continue;
-		}
-		ptr = buffer + strlen(name) + 1;
-		while ((token = strtok_r(ptr, " ", &rest)))
-		{
-			ptr = NULL;
-			sscanf(token, "%d", &time);
-			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
-			sscanf(token, "%d", &partex);
-			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
-			sscanf(token, "%d", &layer);
-			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
-			sscanf(token, "%d", &coll);
-			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
-			sscanf(token, "%f", &angle);
-			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
-			sscanf(token, "%f", &length);
-			if (bone->keyframeCount >= MAX_KFCOUNT)
-			{
-				fprintf(stderr, "Warning: Keyframe count exceeded for bone %s\n", name);
-				continue;
-			}
-			Keyframe *k = &(bone->keyframe[bone->keyframeCount]);
-			k->time = time;
-			k->partex = partex;
-			k->layer = layer;
-			k->coll = coll;
-			k->angle = angle;
-			k->length = length;
-			bone->keyframeCount++;
-			if (time > maxTime)
-			{
-                maxTime = time;
-            }
-		}
-	}
-	fclose(file);
-}        
-
-
 int main(int argc, char *argv[])
 {
 	// Initialization of window and rendering settings
-	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Bone Animation Example");
+	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Bone Animation");
 	SetTargetFPS(60);
 	rlEnableDepthTest();
 	rlEnableColorBlend();
@@ -100,12 +35,12 @@ int main(int argc, char *argv[])
 
 	// Load animations
 	animationLoadKeyframes("Bbs_SkelAnim.txt", root);
-	//animationLoadKeyframes("Bbs_SkelAnim.txt", introot);
-	// Print skeleton information to the console
-	//PrintSkeletonInfo(root, &body);
 
-	int frameNum = 0;
-	bool animating = true;
+	//root = boneCleanAnimation(root, &body, "Bbs_SkelAnim.txt");
+	//root = boneChangeAnimation(root, "Bbs_SkelAnim1.txt");	
+
+	int frameNum = 1;
+	bool animating = false;
 	float intindex = 0.0f;
 	float alocintp = 0.0f;
 
@@ -116,6 +51,20 @@ int main(int argc, char *argv[])
 	// Main game loop
 	while (!WindowShouldClose())
 	{
+		if (IsKeyPressed(KEY_P))   // Avanzar un keyframe cuando se presiona 'P'
+		{
+			frameNum++;
+			if (frameNum >= maxTime)  // Evitar que se pase del último keyframe
+			{
+				frameNum = 0;
+			}
+			boneAnimate(root, frameNum); // Actualizar la animación al siguiente keyframe
+		}
+		else if (IsKeyPressed(KEY_O)) // Retroceder un keyframe cuando se presiona 'O'
+		{
+
+		}
+
         if (animating)
         {
             // Puedes usar un temporizador para avanzar el frame
@@ -138,7 +87,7 @@ int main(int argc, char *argv[])
 				frameNum++;
 
 			}
-        }		
+        }	
 		// drawing and rendering logic
 		BeginDrawing();
 		ClearBackground(GRAY);
@@ -150,7 +99,8 @@ int main(int argc, char *argv[])
 
 		EndDrawing();
 	}
-
+	
+	boneDumpAnim(root, 0);
 	// Clean up and close window
 	CloseWindow();
 	return 0;

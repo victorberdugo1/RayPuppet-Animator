@@ -12,6 +12,7 @@ Texture2D	textures[20];
 int			coordenada,contTxt;
 float		cut_x,cut_y,cut_xb,cut_yb;
 char		nameFTx[99];
+uint32_t	maxTime = 0;
 
 Bone*	boneFreeTree(Bone *root)
 {
@@ -22,22 +23,10 @@ Bone*	boneFreeTree(Bone *root)
     return NULL;
 }
 
-void	boneDumpTree(Bone *root, uint8_t level)
-{
-    if (!root) return;
-    for (int i = 0; i < level; i++) printf("#");
-    printf(" %3.1f %3.1f %3.1f %3.1f %d %s ", root->x, root->y, root->a, root->l, root->childCount, root->name);
-    for (int f = 0; f < root->keyframeCount; f++)
-        printf("%i %d %i %i %3.1f %3.1f ", root->keyframe[f].time, root->keyframe[f].partex, root->keyframe[f].layer, root->keyframe[f].coll, root->keyframe[f].angle, root->keyframe[f].length);
-    printf("\n");
-    for (int i = 0; i < root->childCount; i++)
-        boneDumpTree(root->child[i], level + 1);
-}
-
 void	boneDumpAnim(Bone *root, uint8_t level)
 {
     if (!root) return;
-    printf("%3.1f %3.1f %s ", root->a, root->l, root->name);
+    printf("%s ", root->name);
     for (int f = 0; f < root->keyframeCount; f++)
         printf("%i %d %i %i %3.1f %3.1f ", root->keyframe[f].time, root->keyframe[f].partex, root->keyframe[f].layer, root->keyframe[f].coll, root->keyframe[f].angle, root->keyframe[f].length);
     printf("\n");
@@ -111,7 +100,6 @@ int	boneInterAnimation(Bone *root, Bone *introot, int time, float intindex)
     return keyframeUpdated || others;
 }
 
-
 int boneAnimate(Bone *root, int time) {
     if (!root) return 0;
     int kfUpd = 0;
@@ -149,114 +137,13 @@ int boneAnimate(Bone *root, int time) {
     return kfUpd || others;
 }
 
-int bonePlusAnimate(Bone *root, Bone *introot, int time, float intindex) {
-    if (!root) return 0;
-
-    int i, others = 0;
-    float ang, len, tim;
-
-    for (i = 0; i < root->keyframeCount; i++) {
-        if (root->keyframe[i].time == time) {
-            if (i != root->keyframeCount - 1) {
-                root->depth = root->keyframe[i].layer;
-                root->collition = root->keyframe[i].coll;
-                root->frame = root->keyframe[i].partex;
-
-                tim = root->keyframe[i + 1].time - root->keyframe[i].time;
-                ang = root->keyframe[i + 1].angle - root->keyframe[i].angle;
-                len = root->keyframe[i + 1].length - root->keyframe[i].length;
-
-                root->offA = ang / tim;
-                root->offL = len / tim;
-            } else {
-                root->offA = 0;
-                root->offL = 0;
-            }
-        } else if (root->keyframe[i].time > time) {
-            others = 1;
-        }
-    }
-
-    root->a += root->offA;
-    root->l += root->offL;
-
-    for (i = 0; i < root->childCount; i++) {
-        if (bonePlusAnimate(root->child[i], introot->child[i], time, intindex)) {
-            others = 1;
-        }
-    }
-
-    return others;
-}
-
-int boneLessAnimate(Bone *root, int time) {
-    if (!root) return 0;
-    for (int i = root->keyframeCount - 1; i > 0; i--) {
-        if (root->keyframe[i].time == time) {
-            if (i > 0) {
-                float tim = root->keyframe[i].time - root->keyframe[i - 1].time;
-                root->depth = root->keyframe[i - 1].layer;
-                root->collition = root->keyframe[i].coll;
-                root->frame = root->keyframe[i - 1].partex;
-                root->offA = (root->keyframe[i].angle - root->keyframe[i - 1].angle) / tim;
-                root->offL = (root->keyframe[i].length - root->keyframe[i - 1].length) / tim;
-            } else {
-                root->offA = root->offL = 0;
-            }
-        } else if (root->keyframe[i].time < time) return 1;
-    }
-    root->a += root->offA;
-    root->l += root->offL;
-    int others = 0;
-    for (int i = 0; i < root->childCount; i++) {
-        if (boneLessAnimate(root->child[i], time))
-            others = 1;
-    }
-    return others;
-}
-
 Bone *boneCleanAnimation(Bone *root, t_mesh *body, char *path) {
-    Bone *temp;
-	FILE *file;
-	float x, y, angle, length;
-	int depth, actualLevel, flags;
-	char name[99], depthStr[99], buffer[2048], animBuf[2048], *ptr, *token;
-	if (!(file = fopen(path, "r"))) {
-		fprintf(stderr, "Can't open file %s for reading\n", path);
-		return NULL;
-	}
-	root = NULL;
-	temp = NULL;
-	actualLevel = 0;
-	while (!feof(file)) {
-		memset(animBuf, 0, 2048);
-		fgets(buffer, 2048, file);
-		sscanf(buffer, "%s %f %f %f %f %d %s %[^\n]", depthStr, &x, &y, &angle, &length, &flags, name, animBuf);
-		if (strlen(buffer) < 3)
-			continue;
-		depth = strlen(depthStr) - 1;
-		if (depth < 0 || depth > MAX_CHCOUNT) {
-			fprintf(stderr, "Wrong bone depth (%s)\n", depthStr);
-			return NULL;
-		}
-		for (; actualLevel > depth; actualLevel--)
-			temp = temp->parent;
-		if (!root && !depth) {
-			root = boneAddChild(NULL, x, y, angle, length, flags, name);
-			temp = root;
-		} else
-			temp = boneAddChild(temp, x, y, angle, length, flags, name);
-		if (strlen(animBuf) > 3) {
-			ptr = animBuf;
-			while ((token = strtok(ptr, " "))) {
-				ptr = NULL;
-			}
-			temp->keyframeCount = 0;
-		}
-		actualLevel++;
-	}
-    meshLoadData("Bbs_Mesh.txt", body, root);
-	return root;
+    if (!root) return NULL;  // Verifica si el root es nulo
+    root->keyframeCount = 0;
+    for (int i = 0; i < root->childCount; i++) {
+        boneCleanAnimation(root->child[i],body,path);
+    }
+    return root;
 }
 
 void boneListNames(Bone *root, char names[MAX_BONECOUNT][99]) {
@@ -279,54 +166,11 @@ void boneListNames(Bone *root, char names[MAX_BONECOUNT][99]) {
 }
 
 Bone *boneChangeAnimation(Bone *root, char *path) {
-    Bone *temp;
-    FILE *file;
-    float angle, length;
-    int partex, layer, coll;
-    uint32_t time;
-    char name[99], buffer[4096], animBuf[4096], *ptr, *token;
-    Keyframe *k;
-    if (!(file = fopen(path, "r"))) {
+    if (!root) {
+        fprintf(stderr, "Root bone is NULL\n");
         return NULL;
     }
-    while (!feof(file)) {
-        memset(animBuf, 0, 4096);
-        fgets(buffer, 4096, file);
-        sscanf(buffer, "%f %f %s %[^\n]", &angle, &length, name, animBuf);
-        if (strlen(animBuf) > 2) {
-            strcpy(currentName, name); // Utiliza strcpy en lugar de asignación directa
-            temp = boneFindByName(root, currentName);
-            temp->a = angle;
-            temp->l = length;
-            ptr = animBuf;
-            while ((token = strtok(ptr, " "))) {
-                ptr = NULL;
-                sscanf(token, "%d", &time);
-                token = strtok(ptr, " ");
-                sscanf(token, "%i", &partex);
-                token = strtok(ptr, " ");
-                sscanf(token, "%i", &layer);
-                token = strtok(ptr, " ");
-                sscanf(token, "%i", &coll);
-                token = strtok(ptr, " ");
-                sscanf(token, "%f", &angle);
-                token = strtok(ptr, " ");
-                sscanf(token, "%f", &length);
-                if (temp->keyframeCount >= MAX_KFCOUNT) {
-                    fprintf(stderr, "Can't add more keyframes\n");
-                    continue;
-                }
-                k = &(temp->keyframe[temp->keyframeCount]);
-                k->time = time;
-                k->partex = partex;
-                k->layer = layer;
-                k->coll = coll;
-                k->angle = angle;
-                k->length = length;
-                temp->keyframeCount++;
-            }
-        }
-    }
+    animationLoadKeyframes(path, root);
     return root;
 }
 
@@ -336,45 +180,35 @@ Bone* boneLoadStructure(const char *path) {
     float x, y, angle, length;
     int layer, depth, actualLevel = 0, flags, partex, coll;
     uint32_t time;
-    char name[99], depthStr[99], buffer[4096], animBuf[4096], *ptr, *token, *rest;
+    char name[99], depthStr[99], buffer[4096],  *ptr, *token, *rest;
 
     if (!(file = fopen(path, "r"))) {
         fprintf(stderr, "Can't open file %s for reading\n", path);
         return NULL;
     }
-
     while (fgets(buffer, sizeof(buffer), file)) {
         if (strlen(buffer) < 3)
             continue;
-
-        memset(animBuf, 0, sizeof(animBuf));
-        sscanf(buffer, "%s %f %f %f %f %d %s %[^\n]", depthStr, &x, &y, &angle, &length, &flags, name, animBuf);
+        sscanf(buffer, "%s %f %f %f %f %d %s", depthStr, &x, &y, &angle, &length, &flags, name);
         depth = strlen(depthStr) - 1;
-
         if (depth < 0 || depth > MAX_CHCOUNT) {
             fprintf(stderr, "Wrong bone depth (%s)\n", depthStr);
             fclose(file);
             return NULL;
         }
-
         for (; actualLevel > depth; actualLevel--)
             temp = temp->parent;
-
         if (!root && depth == 0) {
             root = boneAddChild(NULL, x, y, angle, length, flags, name);
             temp = root;
         } else {
             temp = boneAddChild(temp, x, y, angle, length, flags, name);
         }
-
         actualLevel++;
     }
-
     fclose(file);
     return root;
 }
-
-
 
 Bone *boneAddChild(Bone *root, float x, float y, float a, float l, uint8_t flags, char *name) {
     Bone *t;
@@ -420,13 +254,13 @@ void DrawBones(Bone *root) {
         startPos.y + root->l * sin(root->a)
     };
 
-	//DrawLineEx(startPos, endPos, 2.0f, GREEN);
-    //DrawCircleV(startPos, 5, BLUE);
+	DrawLineEx(startPos, endPos, 2.0f, GREEN);
+	DrawCircleV(startPos, 5, BLUE);
 
-    for (int i = 0; i < root->childCount; i++) {
-        if (root->child[i] != NULL) {
-            root->child[i]->x = endPos.x;
-            root->child[i]->y = endPos.y;
+	for (int i = 0; i < root->childCount; i++) {
+		if (root->child[i] != NULL) {
+			root->child[i]->x = endPos.x;
+			root->child[i]->y = endPos.y;
             DrawBones(root->child[i]);
         }
     }
@@ -511,7 +345,7 @@ float getBoneAngle(Bone* b) {
     return (angle - 90.0f);
 }
 
-Vector2 AplBoneTrans(Bone *bone, Vector2 vertex) {
+Vector2 applyBoneMove(Bone *bone, Vector2 vertex) {
     float totalAngle = getBoneAngle(bone);
     float radAngle = totalAngle * M_PI / 180.0f;
 
@@ -528,7 +362,6 @@ int compareVerticesByLayer(const void *a, const void *b) {
     // Obtener la capa del hueso principal de cada vértice
     int layerA = vertA->bone[0]->keyframe[vertA->bone[0]->frame].layer;
     int layerB = vertB->bone[0]->keyframe[vertB->bone[0]->frame].layer;
-
     // Comparar las capas: devolvemos -1 si layerA < layerB para ordenar de menor a mayor
     if (layerA < layerB) return -1;
     if (layerA > layerB) return 1;
@@ -542,35 +375,32 @@ void meshDraw(t_mesh *mesh, Bone *root, int time) {
     for (int i = 0; i < mesh->vertexCount; i++) {
         BoneVertex *boneVertex = &mesh->v[i];
         Vector2 trfrmedPos = {0.0f, 0.0f};
-        float totalAngle = 0.0f;
-        float scaleFactor = 1.0f;
+		float totalAngle = 0.0f;
+		float scaleFactor = 1.0f;
 		Texture2D texture;
 		int	partex[2];
 
 		for (int j = 0; j < boneVertex->boneCount; j++) {
 			Bone *bone = boneVertex->bone[j];
 			if (bone) {
-				Vector2 boneTrfrmedPos = AplBoneTrans(bone, (Vector2){boneVertex->v.x, boneVertex->v.y});
+				Vector2 boneTrfrmedPos = applyBoneMove(bone, (Vector2){boneVertex->v.x, boneVertex->v.y});
 				trfrmedPos.x = boneTrfrmedPos.x;
 				trfrmedPos.y = boneTrfrmedPos.y;
 				totalAngle = getBoneAngle(bone);
 				scaleFactor = boneVertex->weight[j];
 
 				partex[j] = bone->frame;
-				//printf("%s  %d\n",bone->name,bone->frame);
-				//partex = boneFindByName(root, mesh->v[j].bone[1]->name)->frame;
-				//getPartTexture(partex);
 			}
 		}
 		texture = textures[boneVertex->t];
 		getPartTexture(partex[0]);
 
 		Rectangle sourceRect = {
-            cut_x * texture.width,
-            cut_y * texture.height,
-            (cut_xb - cut_x) * texture.width,
-            (cut_yb - cut_y) * texture.height
-        };
+			cut_x * texture.width,
+			cut_y * texture.height,
+			(cut_xb - cut_x) * texture.width,
+			(cut_yb - cut_y) * texture.height
+		};
 
 		float destWidth = 100.0f * scaleFactor;
 		float destHeight = 100.0f * scaleFactor;
@@ -579,4 +409,66 @@ void meshDraw(t_mesh *mesh, Bone *root, int time) {
 		Vector2 origin = {destWidth / 2.0f, destHeight / 2.0f};
 		DrawTexturePro(texture, sourceRect, destRect, origin, totalAngle, WHITE);
 	}
+}
+
+void animationLoadKeyframes(const char *path, Bone *root)
+{
+	FILE		*file;
+	float		angle, length;
+	int			layer, partex, coll;
+	uint32_t	time;
+	char		name[100], buffer[4096], *ptr, *token, *rest;
+	Bone		*bone;
+
+	if (!(file = fopen(path, "r")))
+	{
+		fprintf(stderr, "Can't open file %s for reading\n", path);
+		return;
+	}
+	while (fgets(buffer, sizeof(buffer), file))
+	{
+		if (strlen(buffer) < 3)
+			continue;
+		sscanf(buffer, "%s", name);
+		bone = boneFindByName(root, name);
+		if (!bone)
+		{
+			fprintf(stderr, "Bone %s not found\n", name);
+			continue;
+		}
+		ptr = buffer + strlen(name) + 1;
+		while ((token = strtok_r(ptr, " ", &rest)))
+		{
+			ptr = NULL;
+			sscanf(token, "%d", &time);
+			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
+			sscanf(token, "%d", &partex);
+			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
+			sscanf(token, "%d", &layer);
+			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
+			sscanf(token, "%d", &coll);
+			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
+			sscanf(token, "%f", &angle);
+			if ((token = strtok_r(NULL, " ", &rest)) == NULL) break;
+			sscanf(token, "%f", &length);
+			if (bone->keyframeCount >= MAX_KFCOUNT)
+			{
+				fprintf(stderr, "Warning: Keyframe count exceeded for bone %s\n", name);
+				continue;
+			}
+			Keyframe *k = &(bone->keyframe[bone->keyframeCount]);
+			k->time = time;
+			k->partex = partex;
+			k->layer = layer;
+			k->coll = coll;
+			k->angle = angle;
+			k->length = length;
+			bone->keyframeCount++;
+			if (time > maxTime)
+			{
+				maxTime = time;
+			}
+		}
+	}
+	fclose(file);
 }

@@ -64,14 +64,13 @@ typedef struct _BonesXY{
 // Variables globales
 extern char *currentName;
 extern BonesXY bonesdata[MAX_BONECOUNT];
+extern uint32_t maxTime;
 
 
 /* Function declarations */
 Bone *boneAddChild(Bone *root, float x, float y, float a, float l, uint8_t flags, char *name);
 
 Bone *boneFreeTree(Bone *root);
-
-void boneDumpTree(Bone *root, uint8_t level);
 
 void boneDumpAnim(Bone *root, uint8_t level);
 
@@ -80,10 +79,6 @@ void LoadTextures(void);
 Bone *boneFindByName(Bone *root, char *name);
 
 int boneAnimate(Bone *root, int time);
-
-int bonePlusAnimate(Bone *root, Bone *introot, int time, float intindex);
-
-int boneLessAnimate(Bone *root, int time);
 
 int boneInterAnimation(Bone *root, Bone *root2, int time, float inter);
 
@@ -108,5 +103,7 @@ float getBoneAngle(Bone *b);
 void getPartTexture(int tex);
 
 void meshDraw(t_mesh *mesh, Bone *root, int time);
+
+void animationLoadKeyframes(const char *path, Bone *root);
 
 #endif
