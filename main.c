@@ -40,22 +40,44 @@ void AdvanceBoneSelection(Bone* root) {
         }
     }
 }
-void UpdateBoneProperties(Bone* bone) {
+
+void UpdateBoneProperties(Bone* bone, int time) {
     if (bone == NULL) return;
 
-    if (IsKeyDown(KEY_UP)) {
-        bone->l += 1.0f; // Incrementar longitud
+    // Buscar el keyframe que coincida con el tiempo dado
+    int found = 0; // Para saber si encontramos el keyframe
+    for (int i = 0; i < bone->keyframeCount; i++) {
+        if (bone->keyframe[i].time == time) {
+            found = 1; // Hemos encontrado el keyframe correspondiente al 'time'
+
+            // Ahora modificamos las propiedades del bone y del keyframe
+            if (IsKeyDown(KEY_UP)) {
+                bone->l += 1.0f; // Incrementar longitud
+                bone->keyframe[i].length += 1.0f; // Guardar en el keyframe actual
+            }
+            if (IsKeyDown(KEY_DOWN)) {
+                bone->l -= 1.0f; // Decrementar longitud
+                bone->keyframe[i].length -= 1.0f; // Guardar en el keyframe actual
+            }
+            if (IsKeyDown(KEY_RIGHT)) {
+                bone->a += 0.05f; // Incrementar ángulo
+                bone->keyframe[i].angle += 0.05f; // Guardar en el keyframe actual
+            }
+            if (IsKeyDown(KEY_LEFT)) {
+                bone->a -= 0.05f; // Decrementar ángulo
+                bone->keyframe[i].angle -= 0.05f; // Guardar en el keyframe actual
+            }
+
+            break; // Ya que hemos encontrado el keyframe correcto, no necesitamos continuar
+        }
     }
-    if (IsKeyDown(KEY_DOWN)) {
-        bone->l -= 1.0f; // Decrementar longitud
-    }
-    if (IsKeyDown(KEY_RIGHT)) {
-        bone->a += 0.05f; // Incrementar ángulo
-    }
-    if (IsKeyDown(KEY_LEFT)) {
-        bone->a -= 0.05f; // Decrementar ángulo
+
+    // Si no se encuentra un keyframe con el 'time' exacto, no se hace nada
+    if (!found) {
+        printf("Keyframe no encontrado para el tiempo %d\n", time);
     }
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -99,11 +121,11 @@ int main(int argc, char *argv[])
 	while (!WindowShouldClose())
 	{
 		if (IsKeyPressed(KEY_L))
-        {
+		{
 			AdvanceBoneSelection(root);
 		}
 
-    UpdateBoneProperties(currentBone);
+		UpdateBoneProperties(currentBone, frameNum);
 
 		if (IsKeyPressed(KEY_P))   // Avanzar un keyframe cuando se presiona 'P'
 		{
