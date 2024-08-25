@@ -80,6 +80,8 @@ Bone *boneFindByName(Bone *root, char *name);
 
 int boneAnimate(Bone *root, int time);
 
+int boneAnimateReverse(Bone *root, int time);
+
 int boneInterAnimation(Bone *root, Bone *root2, int time, float inter);
 
 void boneListNames(Bone *root, char names[MAX_BONECOUNT][99]);

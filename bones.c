@@ -16,7 +16,8 @@ uint32_t	maxTime = 0;
 
 Bone*	boneFreeTree(Bone *root)
 {
-    if (!root) return NULL;
+    if (!root)
+		return (NULL);
     for (int i = 0; i < root->childCount; i++)
         boneFreeTree(root->child[i]);
     free(root);
@@ -25,10 +26,14 @@ Bone*	boneFreeTree(Bone *root)
 
 void	boneDumpAnim(Bone *root, uint8_t level)
 {
-    if (!root) return;
+    if (!root) 
+		return;
     printf("%s ", root->name);
     for (int f = 0; f < root->keyframeCount; f++)
-        printf("%i %d %i %i %3.1f %3.1f ", root->keyframe[f].time, root->keyframe[f].partex, root->keyframe[f].layer, root->keyframe[f].coll, root->keyframe[f].angle, root->keyframe[f].length);
+        printf("%i %d %i %i %3.1f %3.1f ", root->keyframe[f].time, 
+				root->keyframe[f].partex, root->keyframe[f].layer, 
+				root->keyframe[f].coll, root->keyframe[f].angle, 
+				root->keyframe[f].length);
     printf("\n");
     for (int i = 0; i < root->childCount; i++)
         boneDumpAnim(root->child[i], level + 1);
@@ -38,8 +43,9 @@ Bone*	boneFindByName(Bone *root, char *name)
 {
 	int		i;
 	Bone	*p;
+
 	if (!root)
-		return NULL;
+		return (NULL);
 	if (!strcmp(root->name, name))
 		return (root);
 	for (i = 0; i < root->childCount; i++)
@@ -53,8 +59,10 @@ Bone*	boneFindByName(Bone *root, char *name)
 
 int	boneInterAnimation(Bone *root, Bone *introot, int time, float intindex)
 {
-    if (!root) return 0;
     int keyframeUpdated = 0;
+
+    if (!root)
+		return (0);
     for (int i = 0; i < root->keyframeCount; i++)
 	{
         if (root->keyframe[i].time == time)
@@ -100,50 +108,100 @@ int	boneInterAnimation(Bone *root, Bone *introot, int time, float intindex)
     return keyframeUpdated || others;
 }
 
-int boneAnimate(Bone *root, int time) {
-    if (!root) return 0;
+int boneAnimate(Bone *root, int time)
+{
     int kfUpd = 0;
-    
-    for (int kfIdx = 0; kfIdx < root->keyframeCount; kfIdx++) {
-        if (root->keyframe[kfIdx].time == time) {
-            if (kfIdx < root->keyframeCount - 1) {
+
+    if (!root)
+		return (0);
+	for (int kfIdx = 0; kfIdx < root->keyframeCount; kfIdx++)
+	{
+        if (root->keyframe[kfIdx].time == time)
+		{
+            if (kfIdx < root->keyframeCount - 1)
+			{
                 float tim = root->keyframe[kfIdx + 1].time - root->keyframe[kfIdx].time;
                 root->depth = root->keyframe[kfIdx].layer;
                 root->collition = root->keyframe[kfIdx].coll;
                 root->frame = root->keyframe[kfIdx].partex;
                 root->offA = (root->keyframe[kfIdx + 1].angle - root->keyframe[kfIdx].angle) / tim;
-                root->offL = (root->keyframe[kfIdx + 1].length - root->keyframe[kfIdx].length) / tim;
-            } else {
-                root->offA = root->offL = 0;
-            }
-            kfUpd = 1;
-            break;
-        } else if (root->keyframe[kfIdx].time > time) {
-            break;
-        }
-    }
-
-    if (kfUpd) {
-        root->a += root->offA;
-        root->l += root->offL;
-    }
-
-    int others = 0;
-    for (int i = 0; i < root->childCount; i++) {
-        if (boneAnimate(root->child[i], time)) {
-            others = 1;
-        }
-    }
-    return kfUpd || others;
+				root->offL = (root->keyframe[kfIdx + 1].length - root->keyframe[kfIdx].length) / tim;
+			}
+			else
+				root->offA = root->offL = 0;
+			kfUpd = 1;
+			break;
+		}
+		else if (root->keyframe[kfIdx].time > time)
+			break;
+	}
+    if (kfUpd)
+	{
+		root->a += root->offA;
+		root->l += root->offL;
+	}
+	int others = 0;
+	for (int i = 0; i < root->childCount; i++)
+	{
+		if (boneAnimate(root->child[i], time))
+			others = 1;
+	}
+	return kfUpd || others;
 }
 
 Bone *boneCleanAnimation(Bone *root, t_mesh *body, char *path) {
-    if (!root) return NULL;  // Verifica si el root es nulo
-    root->keyframeCount = 0;
-    for (int i = 0; i < root->childCount; i++) {
+	if (!root) return NULL;  // Verifica si el root es nulo
+	root->keyframeCount = 0;
+	for (int i = 0; i < root->childCount; i++) {
         boneCleanAnimation(root->child[i],body,path);
     }
     return root;
+}
+
+int boneAnimateReverse(Bone *root, int time)
+{
+    int kfUpd = 0;
+
+    if (!root)
+        return 0;
+
+    for (int kfIdx = root->keyframeCount - 1; kfIdx >= 0; kfIdx--)
+    {
+        if (root->keyframe[kfIdx].time == time)
+        {
+            if (kfIdx > 0)
+            {
+                float tim = root->keyframe[kfIdx].time - root->keyframe[kfIdx - 1].time;
+                root->depth = root->keyframe[kfIdx].layer;
+                root->collition = root->keyframe[kfIdx].coll;
+                root->frame = root->keyframe[kfIdx].partex;
+                root->offA = (root->keyframe[kfIdx].angle - root->keyframe[kfIdx - 1].angle) / tim;
+                root->offL = (root->keyframe[kfIdx].length - root->keyframe[kfIdx - 1].length) / tim;
+            }
+            else
+                root->offA = root->offL = 0;
+
+            kfUpd = 1;
+            break;
+        }
+        else if (root->keyframe[kfIdx].time < time)
+            break;
+    }
+
+    if (kfUpd)
+    {
+        root->a -= root->offA;
+        root->l -= root->offL;
+    }
+
+    int others = 0;
+    for (int i = 0; i < root->childCount; i++)
+    {
+        if (boneAnimateReverse(root->child[i], time))
+            others = 1;
+    }
+
+    return kfUpd || others;
 }
 
 void boneListNames(Bone *root, char names[MAX_BONECOUNT][99]) {

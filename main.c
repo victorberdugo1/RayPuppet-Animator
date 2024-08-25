@@ -16,22 +16,24 @@
 Bone* currentBone = NULL;
 
 
-void AdvanceBoneSelection(Bone* root) {
-    if (currentBone == NULL) {
+void AdvanceBoneSelection(Bone* root)
+{
+    if (currentBone == NULL)
+	{
         currentBone = root;
         return;
     }
-
-    // Si el hueso tiene hijos, selecciona el primero de ellos
-    if (currentBone->childCount > 0) {
+    if (currentBone->childCount > 0)
         currentBone = currentBone->child[0];
-    }
-    // Si no tiene hijos, retrocede hacia el padre y busca el siguiente hermano
-    else {
-        while (currentBone->parent != NULL) {
+    else
+	{
+        while (currentBone->parent != NULL)
+		{
             Bone* parent = currentBone->parent;
-            for (int i = 0; i < parent->childCount; i++) {
-                if (parent->child[i] == currentBone && i + 1 < parent->childCount) {
+            for (int i = 0; i < parent->childCount; i++)
+			{
+                if (parent->child[i] == currentBone && i + 1 < parent->childCount)
+				{
                     currentBone = parent->child[i + 1];
                     return;
                 }
@@ -41,39 +43,43 @@ void AdvanceBoneSelection(Bone* root) {
     }
 }
 
-void UpdateBoneProperties(Bone* bone, int time) {
+void UpdateBoneProperties(Bone* bone, int time)
+{
     if (bone == NULL) return;
 
-    // Buscar el keyframe que coincida con el tiempo dado
-    int found = 0; // Para saber si encontramos el keyframe
-    for (int i = 0; i < bone->keyframeCount; i++) {
-        if (bone->keyframe[i].time == time) {
-            found = 1; // Hemos encontrado el keyframe correspondiente al 'time'
+    int found = 0;
+	for (int i = 0; i < bone->keyframeCount; i++)
+	{
+        if (bone->keyframe[i].time == time)
+		{
+            found = 1;
 
-            // Ahora modificamos las propiedades del bone y del keyframe
-            if (IsKeyDown(KEY_UP)) {
-                bone->l += 1.0f; // Incrementar longitud
-                bone->keyframe[i].length += 1.0f; // Guardar en el keyframe actual
+            if (IsKeyDown(KEY_UP))
+			{
+                bone->l += 1.0f;
+				bone->keyframe[i].length += 1.0f;
+			}
+            if (IsKeyDown(KEY_DOWN))
+			{
+                bone->l -= 1.0f;
+                bone->keyframe[i].length -= 1.0f;
             }
-            if (IsKeyDown(KEY_DOWN)) {
-                bone->l -= 1.0f; // Decrementar longitud
-                bone->keyframe[i].length -= 1.0f; // Guardar en el keyframe actual
+            if (IsKeyDown(KEY_RIGHT))
+			{
+                bone->a += 0.05f;
+				bone->keyframe[i].angle += 0.05f;
             }
-            if (IsKeyDown(KEY_RIGHT)) {
-                bone->a += 0.05f; // Incrementar ángulo
-                bone->keyframe[i].angle += 0.05f; // Guardar en el keyframe actual
+            if (IsKeyDown(KEY_LEFT))
+			{
+                bone->a -= 0.05f;
+                bone->keyframe[i].angle -= 0.05f;
             }
-            if (IsKeyDown(KEY_LEFT)) {
-                bone->a -= 0.05f; // Decrementar ángulo
-                bone->keyframe[i].angle -= 0.05f; // Guardar en el keyframe actual
-            }
-
-            break; // Ya que hemos encontrado el keyframe correcto, no necesitamos continuar
-        }
+            break;
+		}
     }
 
-    // Si no se encuentra un keyframe con el 'time' exacto, no se hace nada
-    if (!found) {
+    if (!found) 
+	{
         printf("Keyframe no encontrado para el tiempo %d\n", time);
     }
 }
@@ -114,7 +120,6 @@ int main(int argc, char *argv[])
     {
         maxTime = atoi(argv[1]);
     }
-
 	currentBone = root;  // Empezamos con el root
 
 	// Main game loop
@@ -124,26 +129,30 @@ int main(int argc, char *argv[])
 		{
 			AdvanceBoneSelection(root);
 		}
-
 		UpdateBoneProperties(currentBone, frameNum);
 
-		if (IsKeyPressed(KEY_P))   // Avanzar un keyframe cuando se presiona 'P'
+		if (IsKeyPressed(KEY_P))
 		{
 			frameNum++;
-			if (frameNum >= maxTime)  // Evitar que se pase del último keyframe
+			if (frameNum >= maxTime)
 			{
 				frameNum = 0;
 			}
-			boneAnimate(root, frameNum); // Actualizar la animación al siguiente keyframe
+			boneAnimate(root, frameNum);
 		}
-		else if (IsKeyPressed(KEY_O)) // Retroceder un keyframe cuando se presiona 'O'
+		else if (IsKeyPressed(KEY_O))
 		{
-
+			frameNum--;
+			if (frameNum < 0) 
+			{
+				frameNum = maxTime;
+			}
+			boneAnimateReverse(root, frameNum);
 		}
+
 
         if (animating)
         {
-            // Puedes usar un temporizador para avanzar el frame
 			static float frameTimer = 0.0f;
 			frameTimer += GetFrameTime();
 
@@ -151,16 +160,16 @@ int main(int argc, char *argv[])
 			if (frameTimer >= 0.02f)
 			{
 				frameTimer = 0.0f;
-				if (frameNum >= maxTime) //eNum >= maxTime) Reinicia el frameNum cuando alcanza el máximo
+				if (frameNum < 0)	//			if (frameNum >= maxTime)
 				{
-					frameNum = 0;
+					frameNum = maxTime;
 					if (argc > 1)
 					{
 						frameNum = maxTime;
 					}
 				}
-				boneAnimate(root, frameNum); // Actualiza la animación
-				frameNum++;
+				boneAnimateReverse(root, frameNum);
+				frameNum--;
 
 			}
         }	
@@ -170,12 +179,9 @@ int main(int argc, char *argv[])
 		meshDraw(&body, root, frameNum);
 		DrawBones(root);
 
-		// Muestra el número de frame actual
+		// Muestra info 
         DrawText(TextFormat("Frame Number: %d", frameNum), 10, 10, 20, WHITE);
-// Mostrar el hueso seleccionado en pantalla
         DrawText(TextFormat("Selected Bone: %s", currentBone->name), 10, 40, 20, WHITE);
-
-        // Mostrar el largo y el ángulo del hueso seleccionado
         DrawText(TextFormat("Length: %.2f", currentBone->l), 10, 70, 20, WHITE);
         DrawText(TextFormat("Angle: %.2f", currentBone->a), 10, 100, 20, WHITE);
 
