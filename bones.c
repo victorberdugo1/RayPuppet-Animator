@@ -81,16 +81,12 @@ int	boneInterAnimation(Bone *root, Bone *introot, int time, float intindex)
                     (root->keyframe[i + 1].length - root->keyframe[i].length)) * intindex) / tim;
             }
 			else
-			{
                 root->offA = root->offL = 0;
-            }
             keyframeUpdated = 1;
             break;
         }
 		else if (root->keyframe[i].time > time)
-		{
             break;
-        }
     }
     if (keyframeUpdated)
 	{
@@ -101,11 +97,9 @@ int	boneInterAnimation(Bone *root, Bone *introot, int time, float intindex)
     for (int i = 0; i < root->childCount; i++)
 	{
         if (boneInterAnimation(root->child[i], introot->child[i], time, intindex))
-		{
             others = 1;
-        }
     }
-    return keyframeUpdated || others;
+    return (keyframeUpdated || others);
 }
 
 int boneAnimate(Bone *root, int time)
