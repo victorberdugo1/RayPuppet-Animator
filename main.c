@@ -43,51 +43,47 @@ void AdvanceBoneSelection(Bone* root)
     }
 }
 
-void UpdateBoneProperties(Bone* bone, int time)
+int UpdateBoneProperties(Bone* bone, int time)
 {
-    if (bone == NULL) return;
-
+    if (bone == NULL)
+		return (0); 
     int found = 0;
-	for (int i = 0; i < bone->keyframeCount; i++)
-	{
+    for (int i = 0; i < bone->keyframeCount; i++)
+    {
         if (bone->keyframe[i].time == time)
-		{
+        {
             found = 1;
 
             if (IsKeyDown(KEY_UP))
-			{
+            {
                 bone->l += 1.0f;
-				bone->keyframe[i].length += 1.0f;
-			}
+                bone->keyframe[i].length += 1.0f;
+            }
             if (IsKeyDown(KEY_DOWN))
-			{
+            {
                 bone->l -= 1.0f;
                 bone->keyframe[i].length -= 1.0f;
             }
             if (IsKeyDown(KEY_RIGHT))
-			{
+            {
                 bone->a += 0.05f;
-				bone->keyframe[i].angle += 0.05f;
+                bone->keyframe[i].angle += 0.05f;
             }
             if (IsKeyDown(KEY_LEFT))
-			{
+            {
                 bone->a -= 0.05f;
                 bone->keyframe[i].angle -= 0.05f;
             }
-            break;
-		}
+            break ;
+        }
     }
 
-    if (!found) 
-	{
-        printf("Keyframe no encontrado para el tiempo %d\n", time);
-    }
+    return (found);
 }
 
 
 int main(int argc, char *argv[])
 {
-	// Initialization of window and rendering settings
 	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Bone Animation");
 	SetTargetFPS(60);
 	rlEnableDepthTest();
@@ -121,6 +117,7 @@ int main(int argc, char *argv[])
         maxTime = atoi(argv[1]);
     }
 	currentBone = root;  // Empezamos con el root
+	int keyframeStatus = 0;
 
 	// Main game loop
 	while (!WindowShouldClose())
@@ -129,7 +126,7 @@ int main(int argc, char *argv[])
 		{
 			AdvanceBoneSelection(root);
 		}
-		UpdateBoneProperties(currentBone, frameNum);
+		keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
 
 		if (IsKeyPressed(KEY_P))
 		{
@@ -184,7 +181,10 @@ int main(int argc, char *argv[])
         DrawText(TextFormat("Selected Bone: %s", currentBone->name), 10, 40, 20, WHITE);
         DrawText(TextFormat("Length: %.2f", currentBone->l), 10, 70, 20, WHITE);
         DrawText(TextFormat("Angle: %.2f", currentBone->a), 10, 100, 20, WHITE);
-
+		if (keyframeStatus)
+            DrawText("Keyframe encontrado", 10, 130, 20, GREEN);
+        else
+            DrawText("Keyframe no encontrado", 10, 130, 20, RED);
 		EndDrawing();
 	}
 	
