@@ -24,6 +24,40 @@ int selectedBone = 0;
 int frameNum = 0;
 Bone* root = NULL;
 
+/*
+guardar una variable que identifique si la animacion esta llendo 
+adelante o atras
+guardar el ultimo moviemitn si fue ++ o --
+y si cambia 
+se debe ir si es ++ hasta el final 
+y si es -- hasta 0
+y luego ya animar hasta el frame con la nueva direccion
+}*/
+
+void UpdateAnimationWithSlider(float sliderValue)
+{
+    int newFrame = (int)sliderValue;
+    int currentFrame = frameNum;
+
+    if (currentFrame != newFrame)
+    {
+        if (newFrame > currentFrame)
+        {
+            while (currentFrame < newFrame)
+            {
+                boneAnimate(root, ++currentFrame);
+            }
+        }
+        else
+        {
+            while (currentFrame > newFrame)
+            {
+                boneAnimateReverse(root, --currentFrame);
+            }
+        }
+        frameNum = newFrame;
+    }
+}
 void LoadBonesBox(Bone* root, Bone* bones[], int* count)
 {
     int index = 0;
@@ -38,33 +72,6 @@ void LoadBonesBox(Bone* root, Bone* bones[], int* count)
             LoadBonesBoxRecursive(bone->child[i]);
     }
     LoadBonesBoxRecursive(root);
-}
-
-void AdvanceBoneSelection(Bone* root)
-{
-    if (currentBone == NULL)
-    {
-        currentBone = root;
-        return;
-    }
-    if (currentBone->childCount > 0)
-        currentBone = currentBone->child[0];
-    else
-    {
-        while (currentBone->parent != NULL)
-        {
-            Bone* parent = currentBone->parent;
-            for (int i = 0; i < parent->childCount; i++)
-            {
-                if (parent->child[i] == currentBone && i + 1 < parent->childCount)
-                {
-                    currentBone = parent->child[i + 1];
-                    return;
-                }
-            }
-            currentBone = parent;
-        }
-    }
 }
 
 int UpdateBoneProperties(Bone* bone, int time)
@@ -144,9 +151,6 @@ int main(void)
 
     while (!WindowShouldClose())
     {
-        if (IsKeyPressed(KEY_L))
-            AdvanceBoneSelection(root);
-
         keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
 
         if (IsKeyPressed(KEY_P))
@@ -155,6 +159,8 @@ int main(void)
 			if (frameNum > maxTime)
 				frameNum = 0;
 			boneAnimate(root, frameNum);
+			frameNumFloat = frameNum;
+
 		}
 		else if (IsKeyPressed(KEY_O))
 		{
@@ -162,38 +168,29 @@ int main(void)
 			if (frameNum < 0)
 				frameNum = maxTime;
 			boneAnimateReverse(root, frameNum);
+			frameNumFloat = frameNum;
+
 		}
 		if (animating)
 		{
-			frameNum--;
+			/*frameNum--;
 			if (frameNum < 0)
 				frameNum = maxTime;
-			boneAnimateReverse(root, frameNum);
+			boneAnimateReverse(root, frameNum);*/
 
-			/*frameNum++;
+			frameNum++;
 			if (frameNum >= maxTime)
 				frameNum = 0;
-			boneAnimate(root, frameNum);*/
+			boneAnimate(root, frameNum);
+			frameNumFloat = frameNum;
 		}
 
         BeginDrawing();
-
-        ClearBackground(GRAY);
-		
+        ClearBackground(GRAY);		
 		//Toggles
 		DrawRectangleRec((Rectangle){10, SCREEN_HEIGHT - 160, 130, 85},  WHITE);
 		GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 150, 50, 30}, "Draw Bones", &drawBonesEnabled);
 		GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 115, 50, 30}, "Animating", &animating);
-
-
-        DrawText(TextFormat("Bone: %s", currentBone ? currentBone->name : "None"), 10, 40, 20, WHITE);
-        DrawText(TextFormat("Length: %.2f", currentBone ? currentBone->l : 0.0f), 10, 70, 20, WHITE);
-        DrawText(TextFormat("Angle: %.2f", currentBone ? currentBone->a : 0.0f), 10, 100, 20, WHITE);
-		if (keyframeStatus)
-            DrawText("Keyframe encontrado", 10, 130, 20, GREEN);
-		else
-			DrawText("Keyframe no encontrado", 10, 130, 20, RED);
-
 		//Draw Panel
 		BeginScissorMode(scrollPanelBounds.x, scrollPanelBounds.y, 
 				scrollPanelBounds.width, scrollPanelBounds.height);
@@ -214,17 +211,33 @@ int main(void)
 		}
 		EndScissorMode();
 		// Draw the slider 
-		Rectangle sliderBounds = (Rectangle){20, SCREEN_HEIGHT - 30, SCREEN_WIDTH - 40, 20};
-		GuiSlider(sliderBounds, "", NULL, &frameNumFloat, 0.0f, (float)maxTime);
-		frameNum = (int)frameNumFloat;
-		for (int i = 0; i <= maxTime; i++)
+		if (!animating)
 		{
-			float posX = sliderBounds.x + (i * ((sliderBounds.width - 20) / (float)maxTime));
-			Color textColor = isKeyframe[i] ? GREEN : WHITE;
-			DrawText(TextFormat("%d", i), posX + 5, sliderBounds.y - 20, 15, textColor);
+
+			Rectangle sliderBounds = (Rectangle){20, SCREEN_HEIGHT - 30, SCREEN_WIDTH - 40, 20};
+			float newSliderValue = GuiSlider(sliderBounds, "", NULL, &frameNumFloat, 0.0f, (float)maxTime);
+			if (newSliderValue != frameNumFloat)
+				animating = false;
+			UpdateAnimationWithSlider(frameNumFloat);
+			for (int i = 0; i <= maxTime; i++)
+			{
+				float posX = sliderBounds.x + (i * ((sliderBounds.width - 20) / (float)maxTime));
+				Color textColor = isKeyframe[i] ? GREEN : WHITE;
+				DrawText(TextFormat("%d", i), posX + 5, sliderBounds.y - 20, 15, textColor);
+			}
 		}
+
+		//Info
+        DrawText(TextFormat("Bone: %s", currentBone ? currentBone->name : "None"), 10, 40, 20, WHITE);
+        DrawText(TextFormat("Length: %.2f", currentBone ? currentBone->l : 0.0f), 10, 70, 20, WHITE);
+        DrawText(TextFormat("Angle: %.2f", currentBone ? currentBone->a : 0.0f), 10, 100, 20, WHITE);
         DrawText(TextFormat("Frame Number: %d", frameNum), 10, 10, 20, WHITE);
-boneAnimate(root, frameNum);
+		if (keyframeStatus)
+            DrawText("Keyframe encontrado", 10, 130, 20, GREEN);
+		else
+			DrawText("Keyframe no encontrado", 10, 130, 20, RED);
+
+		//boneAnimate(root, frameNum);
 
 		meshDraw(&body, root, frameNum);
         DrawBones(root, drawBonesEnabled);
