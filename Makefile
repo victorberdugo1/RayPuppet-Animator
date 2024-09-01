@@ -2,6 +2,8 @@ NAME = bones
 
 LIB = libraylib.a
 
+INC_DIR = inc
+
 INCLUDE = bones.h raymath.h raylib.h rlgl.h raygui.h
 
 SRC = main.c bones.c
@@ -10,7 +12,7 @@ OBJ = $(SRC:.c=.o)
 
 CC = cc
 
-CFLAGS = -Wall -I. 
+CFLAGS = -Wall -I$(INC_DIR)
 
 LDFLAGS = -L. -lraylib -lm -ldl -lpthread -lGL -lX11
 

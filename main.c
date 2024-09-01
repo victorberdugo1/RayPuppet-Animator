@@ -20,8 +20,7 @@
 Bone* currentBone = NULL;
 Bone* bones[MAX_BONES];
 int boneCount = 0;
-int selectedBone = -1;
-//int maxKeyframes = MAX_KEYFRAMES;
+int selectedBone = 0;
 int frameNum = 0;
 Bone* root = NULL;
 
@@ -31,15 +30,13 @@ void LoadBonesBox(Bone* root, Bone* bones[], int* count)
 
     void LoadBonesBoxRecursive(Bone* bone)
     {
-        if (index >= MAX_BONES) return;
+        if (index >= MAX_BONES)
+			return;
         bones[index++] = bone;
         (*count)++;
         for (int i = 0; i < bone->childCount; i++)
-        {
             LoadBonesBoxRecursive(bone->child[i]);
-        }
     }
-
     LoadBonesBoxRecursive(root);
 }
 
@@ -80,7 +77,6 @@ int UpdateBoneProperties(Bone* bone, int time)
         if (bone->keyframe[i].time == time)
         {
             found = 1;
-
             if (IsKeyDown(KEY_UP))
             {
                 bone->l += 1.0f;
@@ -104,7 +100,6 @@ int UpdateBoneProperties(Bone* bone, int time)
             break;
         }
     }
-
     return found;
 }
 
@@ -119,75 +114,78 @@ int main(void)
     t_mesh body;
     root = boneLoadStructure("Bbs_Skel.txt");
     root->x = GetScreenWidth() / 2.0f;
-    root->y = GetScreenHeight() / 1.0f;
+    root->y = GetScreenHeight() / 1.1f;
 
     char names[MAX_BONES][99] = {0};
     boneListNames(root, names);
-    LoadBonesBox(root, bones, &boneCount);
 
     meshLoadData("Bbs_Mesh.txt", &body, root);
     LoadTextures();
 
     animationLoadKeyframes("Bbs_SkelAnim.txt", root);
 
-    frameNum = 1;
+    frameNum = 0;
     bool animating = false;
-
-
-
-    currentBone = root;
-    int keyframeStatus = 0;
-
-	// Define the scroll panel's rectangle and content height
-    Rectangle scrollPanelBounds = (Rectangle){SCREEN_WIDTH - 190, 40, 180, SCREEN_HEIGHT - 140};
-    Rectangle contentBounds = (Rectangle){0, 0, 180, boneCount * 30}; // Adjust content height based on bone count
-    Vector2 scrollOffset = {0, 0}; // Initialize the scroll offset
-
+	
+	/* GUI */
+    LoadBonesBox(root, bones, &boneCount);
+	int keyframeStatus = 0;
+	currentBone = bones[selectedBone];
+	Rectangle scrollPanelBounds = (Rectangle){SCREEN_WIDTH - 190, 40, 180, SCREEN_HEIGHT - 140};
+    Rectangle contentBounds = (Rectangle){0, 0, 180, boneCount * 30};
+    Vector2 scrollOffset = {0, 0};
+	bool isKeyframe[maxTime + 1];
+	bool drawBonesEnabled = true;
+	float frameNumFloat = (float)frameNum;
+	memset(isKeyframe, 0, sizeof(isKeyframe));
+	for (int j = 0; j < currentBone->keyframeCount; j++)
+		if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
+			isKeyframe[currentBone->keyframe[j].time] = true;
 
     while (!WindowShouldClose())
     {
         if (IsKeyPressed(KEY_L))
-        {
             AdvanceBoneSelection(root);
-        }
 
         keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
 
         if (IsKeyPressed(KEY_P))
 		{
 			frameNum++;
-			if (frameNum >= maxTime)
-			{
+			if (frameNum > maxTime)
 				frameNum = 0;
-			}
 			boneAnimate(root, frameNum);
 		}
 		else if (IsKeyPressed(KEY_O))
 		{
 			frameNum--;
-			if (frameNum < 0) 
-			{
+			if (frameNum < 0)
 				frameNum = maxTime;
-			}
 			boneAnimateReverse(root, frameNum);
 		}
-
 		if (animating)
 		{
-			frameNum++;
+			frameNum--;
+			if (frameNum < 0)
+				frameNum = maxTime;
+			boneAnimateReverse(root, frameNum);
+
+			/*frameNum++;
 			if (frameNum >= maxTime)
-			{
 				frameNum = 0;
-			}
-			boneAnimate(root, frameNum);
+			boneAnimate(root, frameNum);*/
 		}
 
         BeginDrawing();
-        ClearBackground(GRAY);
-        meshDraw(&body, root, frameNum);
-        DrawBones(root);
 
-        DrawText(TextFormat("Frame Number: %d", frameNum), 10, 10, 20, WHITE);
+        ClearBackground(GRAY);
+		
+		//Toggles
+		DrawRectangleRec((Rectangle){10, SCREEN_HEIGHT - 160, 130, 85},  WHITE);
+		GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 150, 50, 30}, "Draw Bones", &drawBonesEnabled);
+		GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 115, 50, 30}, "Animating", &animating);
+
+
         DrawText(TextFormat("Bone: %s", currentBone ? currentBone->name : "None"), 10, 40, 20, WHITE);
         DrawText(TextFormat("Length: %.2f", currentBone ? currentBone->l : 0.0f), 10, 70, 20, WHITE);
         DrawText(TextFormat("Angle: %.2f", currentBone ? currentBone->a : 0.0f), 10, 100, 20, WHITE);
@@ -197,6 +195,8 @@ int main(void)
 			DrawText("Keyframe no encontrado", 10, 130, 20, RED);
 
 		//Draw Panel
+		BeginScissorMode(scrollPanelBounds.x, scrollPanelBounds.y, 
+				scrollPanelBounds.width, scrollPanelBounds.height);
 		GuiScrollPanel(scrollPanelBounds, NULL, contentBounds, &scrollOffset, NULL);
 		for (int i = 0; i < boneCount; i++)
 		{
@@ -206,18 +206,32 @@ int main(void)
 			{
 				selectedBone = i;
 				currentBone = bones[selectedBone];
-				maxTime = currentBone->keyframeCount;
+				memset(isKeyframe, 0, sizeof(isKeyframe));
+				for (int j = 0; j < currentBone->keyframeCount; j++)
+					if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
+						isKeyframe[currentBone->keyframe[j].time] = true;
 			}
 		}
-		// Draw the slider
-		float frameNumFloat = (float)frameNum;
-		float *sliderValuePtr = &frameNumFloat;
-		GuiSlider((Rectangle){20, SCREEN_HEIGHT - 90, SCREEN_WIDTH - 40, 20},
-				"Keyframe", NULL, sliderValuePtr, 0.0f, (float)(maxTime - 1));
+		EndScissorMode();
+		// Draw the slider 
+		Rectangle sliderBounds = (Rectangle){20, SCREEN_HEIGHT - 30, SCREEN_WIDTH - 40, 20};
+		GuiSlider(sliderBounds, "", NULL, &frameNumFloat, 0.0f, (float)maxTime);
+		frameNum = (int)frameNumFloat;
+		for (int i = 0; i <= maxTime; i++)
+		{
+			float posX = sliderBounds.x + (i * ((sliderBounds.width - 20) / (float)maxTime));
+			Color textColor = isKeyframe[i] ? GREEN : WHITE;
+			DrawText(TextFormat("%d", i), posX + 5, sliderBounds.y - 20, 15, textColor);
+		}
+        DrawText(TextFormat("Frame Number: %d", frameNum), 10, 10, 20, WHITE);
+boneAnimate(root, frameNum);
 
-        EndDrawing();
-    }
+		meshDraw(&body, root, frameNum);
+        DrawBones(root, drawBonesEnabled);
 
-    return 0;
+		EndDrawing();
+	}
+	//boneDumpAnim(root, 0);
+	CloseWindow();
+	return 0;
 }
-

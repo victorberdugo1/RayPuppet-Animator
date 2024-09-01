@@ -310,30 +310,34 @@ Bone *boneAddChild(Bone *root, float x, float y, float a, float l, uint8_t flags
 	return (root);
 }
 
-void DrawBones(Bone *root)
+void DrawBones(Bone *root, bool drawBonesEnabled)
 {
-	if (root == NULL)
-		return ;
+    if (root == NULL)
+        return;
 
-	Vector2 startPos = { root->x, root->y };
-	Vector2 endPos = {
-		startPos.x + root->l * cos(root->a),
-		startPos.y + root->l * sin(root->a)
-	};
+    Vector2 startPos = { root->x, root->y };
+    Vector2 endPos = {
+        startPos.x + root->l * cos(root->a),
+        startPos.y + root->l * sin(root->a)
+    };
 
-	DrawLineEx(startPos, endPos, 2.0f, GREEN);
-	DrawCircleV(startPos, 5, BLUE);
+    if (drawBonesEnabled)
+    {
+        DrawLineEx(startPos, endPos, 2.0f, GREEN);
+        DrawCircleV(startPos, 5, BLUE);
+    }
 
-	for (int i = 0; i < root->childCount; i++)
-	{
-		if (root->child[i] != NULL)
-		{
-			root->child[i]->x = endPos.x;
-			root->child[i]->y = endPos.y;
-			DrawBones(root->child[i]);
-		}
-	}
+    for (int i = 0; i < root->childCount; i++)
+    {
+        if (root->child[i] != NULL)
+        {
+            root->child[i]->x = endPos.x;
+            root->child[i]->y = endPos.y;
+            DrawBones(root->child[i], drawBonesEnabled); 
+        }
+    }
 }
+
 
 void meshLoadData(char *file, t_mesh *mesh, Bone *root)
 {
