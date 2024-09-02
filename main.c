@@ -24,40 +24,44 @@ int selectedBone = 0;
 int frameNum = 0;
 Bone* root = NULL;
 
-/*
-guardar una variable que identifique si la animacion esta llendo 
-adelante o atras
-guardar el ultimo moviemitn si fue ++ o --
-y si cambia 
-se debe ir si es ++ hasta el final 
-y si es -- hasta 0
-y luego ya animar hasta el frame con la nueva direccion
-}*/
+int direction = 0 ;  
 
-void UpdateAnimationWithSlider(float sliderValue)
+void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 {
     int newFrame = (int)sliderValue;
     int currentFrame = frameNum;
 
-    if (currentFrame != newFrame)
+	int newDirection = (newFrame > currentFrame) ? 1 : (newFrame < currentFrame) ? -1 : direction;	
+    if (newDirection != direction)
     {
-        if (newFrame > currentFrame)
+        if (direction == 1)  // Si estaba avanzando
         {
-            while (currentFrame < newFrame)
+			while (currentFrame <= maxTime)
             {
                 boneAnimate(root, ++currentFrame);
+                frameNum = currentFrame;
             }
         }
-        else
+        else  // Si estaba retrocediendo
         {
-            while (currentFrame > newFrame)
+            while (currentFrame >= 0)
             {
                 boneAnimateReverse(root, --currentFrame);
+                frameNum = currentFrame;
             }
         }
-        frameNum = newFrame;
+        direction = newDirection;
+    }
+    while (currentFrame != newFrame)
+    {
+        if (direction == 1)
+            boneAnimate(root, ++currentFrame);
+        else
+            boneAnimateReverse(root, --currentFrame);
+        frameNum = currentFrame;
     }
 }
+
 void LoadBonesBox(Bone* root, Bone* bones[], int* count)
 {
     int index = 0;
@@ -132,8 +136,8 @@ int main(void)
     animationLoadKeyframes("Bbs_SkelAnim.txt", root);
 
     frameNum = 0;
-    bool animating = false;
-	
+    bool animating = 0;
+	bool revAnim = 0;	
 	/* GUI */
     LoadBonesBox(root, bones, &boneCount);
 	int keyframeStatus = 0;
@@ -171,26 +175,32 @@ int main(void)
 			frameNumFloat = frameNum;
 
 		}
-		if (animating)
+		if (animating == 1)  // Animación hacia adelante
 		{
-			/*frameNum--;
-			if (frameNum < 0)
-				frameNum = maxTime;
-			boneAnimateReverse(root, frameNum);*/
-
 			frameNum++;
 			if (frameNum >= maxTime)
 				frameNum = 0;
 			boneAnimate(root, frameNum);
 			frameNumFloat = frameNum;
 		}
-
+		if (revAnim   == 1)  // Animación en reversa
+		{
+			frameNum--;
+			if (frameNum < 0)
+				frameNum = maxTime;
+			boneAnimateReverse(root, frameNum);
+			frameNumFloat = frameNum;
+		}
         BeginDrawing();
         ClearBackground(GRAY);		
 		//Toggles
-		DrawRectangleRec((Rectangle){10, SCREEN_HEIGHT - 160, 130, 85},  WHITE);
-		GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 150, 50, 30}, "Draw Bones", &drawBonesEnabled);
-		GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 115, 50, 30}, "Animating", &animating);
+		DrawRectangleRec((Rectangle){10, SCREEN_HEIGHT - 170, 130, 115},  WHITE);
+		GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 160, 50, 30}, "Draw Bones", &drawBonesEnabled);
+		if (GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 125, 50, 30}, "Animating", &animating))	
+			revAnim = false;
+		if (GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 90, 50, 30}, "Reverse", &revAnim))
+			animating = false;
+
 		//Draw Panel
 		BeginScissorMode(scrollPanelBounds.x, scrollPanelBounds.y, 
 				scrollPanelBounds.width, scrollPanelBounds.height);
@@ -218,7 +228,7 @@ int main(void)
 			float newSliderValue = GuiSlider(sliderBounds, "", NULL, &frameNumFloat, 0.0f, (float)maxTime);
 			if (newSliderValue != frameNumFloat)
 				animating = false;
-			UpdateAnimationWithSlider(frameNumFloat);
+			UpdateAnimationWithSlider(frameNumFloat,maxTime);
 			for (int i = 0; i <= maxTime; i++)
 			{
 				float posX = sliderBounds.x + (i * ((sliderBounds.width - 20) / (float)maxTime));
