@@ -534,9 +534,6 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
 						texture.height) / 2.0f;
 				break;
 			case 5:
-				static float wavePhase;
-				wavePhase += 0.05f;
-				destRect.height += 10.0f * sin(0.2f * GetTime() + wavePhase);
 				break;
 			case 6:
 				break;

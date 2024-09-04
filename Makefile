@@ -4,9 +4,9 @@ LIB = libraylib.a
 
 INC_DIR = inc
 
-INCLUDE = bones.h raymath.h raylib.h rlgl.h raygui.h
+INCLUDE = bones.h raymath.h raylib.h rlgl.h raygui.h gui.h
 
-SRC = main.c bones.c
+SRC = main.c bones.c gui.c
 
 OBJ = $(SRC:.c=.o)
 

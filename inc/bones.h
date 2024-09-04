@@ -3,8 +3,11 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include "raylib.h"
 #include "raymath.h"
+#include "raygui.h"
+
 
 #define MAX_CHCOUNT                99  /* Max children count */
 #define MAX_BONECOUNT              99  /* Max bone count */

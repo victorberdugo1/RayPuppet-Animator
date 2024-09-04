@@ -9,13 +9,9 @@
 #include "bones.h"
 #include "raylib.h"
 #include "rlgl.h"
-#define RAYGUI_IMPLEMENTATION
-#include "raygui.h"
+#include "config.h"
+#include "gui.h"
 
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 720
-#define MAX_BONES 100
-#define MAX_KEYFRAMES 50
 
 Bone* currentBone = NULL;
 Bone* bones[MAX_BONES];
@@ -24,8 +20,8 @@ int selectedBone = 0;
 int frameNum = 0;
 Bone* root = NULL;
 
-int direction = 0 ;  
-
+/*int direction = 0 ;  
+/
 void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 {
     int newFrame = (int)sliderValue;
@@ -34,22 +30,18 @@ void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 	int newDirection = (newFrame > currentFrame) ? 1 : (newFrame < currentFrame) ? -1 : direction;	
     if (newDirection != direction)
     {
-        if (direction == 1)  // Si estaba avanzando
-        {
+        if (direction == 1)
 			while (currentFrame <= maxTime)
             {
                 boneAnimate(root, ++currentFrame);
                 frameNum = currentFrame;
             }
-        }
-        else  // Si estaba retrocediendo
-        {
+        else
             while (currentFrame >= 0)
             {
                 boneAnimateReverse(root, --currentFrame);
                 frameNum = currentFrame;
             }
-        }
         direction = newDirection;
     }
     while (currentFrame != newFrame)
@@ -62,21 +54,22 @@ void UpdateAnimationWithSlider(float sliderValue, int maxTime)
     }
 }
 
+void LoadBonesBoxRecursive(Bone* bone, Bone* bones[], int* index, int* count)
+{
+    if (*index >= MAX_BONES) return;  
+    bones[*index] = bone;
+	(*index)++;
+    (*count)++;
+    for (int i = 0; i < bone->childCount; i++)
+		LoadBonesBoxRecursive(bone->child[i], bones, index, count);
+}
+
 void LoadBonesBox(Bone* root, Bone* bones[], int* count)
 {
-    int index = 0;
-
-    void LoadBonesBoxRecursive(Bone* bone)
-    {
-        if (index >= MAX_BONES)
-			return;
-        bones[index++] = bone;
-        (*count)++;
-        for (int i = 0; i < bone->childCount; i++)
-            LoadBonesBoxRecursive(bone->child[i]);
-    }
-    LoadBonesBoxRecursive(root);
-}
+    int index = 0;  
+    *count = 0; 
+	LoadBonesBoxRecursive(root, bones, &index, count);
+}*/
 
 int UpdateBoneProperties(Bone* bone, int time)
 {
@@ -136,64 +129,40 @@ int main(void)
     animationLoadKeyframes("Bbs_SkelAnim.txt", root);
 
     frameNum = 0;
-    bool animating = 0;
-	bool revAnim = 0;	
-	/* GUI */
-    LoadBonesBox(root, bones, &boneCount);
-	int keyframeStatus = 0;
+    //bool animating = 0;
+	//bool revAnim = 0;	
+	/* GUI /
+    LoadBonesBox(root, bones,&boneCount);
+
 	currentBone = bones[selectedBone];
 	Rectangle scrollPanelBounds = (Rectangle){SCREEN_WIDTH - 190, 40, 180, SCREEN_HEIGHT - 140};
     Rectangle contentBounds = (Rectangle){0, 0, 180, boneCount * 30};
     Vector2 scrollOffset = {0, 0};
+
 	bool isKeyframe[maxTime + 1];
-	bool drawBonesEnabled = true;
-	float frameNumFloat = (float)frameNum;
+
+
+
 	memset(isKeyframe, 0, sizeof(isKeyframe));
 	for (int j = 0; j < currentBone->keyframeCount; j++)
 		if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
-			isKeyframe[currentBone->keyframe[j].time] = true;
+			isKeyframe[currentBone->keyframe[j].time] = true;*/
+//	bool drawBonesEnabled = true;
+//	float frameNumFloat = (float)frameNum;
+
+	//int keyframeStatus = 0;
+
+	InitializeGUI();
 
     while (!WindowShouldClose())
     {
         keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
 
-        if (IsKeyPressed(KEY_P))
-		{
-			frameNum++;
-			if (frameNum > maxTime)
-				frameNum = 0;
-			boneAnimate(root, frameNum);
-			frameNumFloat = frameNum;
-
-		}
-		else if (IsKeyPressed(KEY_O))
-		{
-			frameNum--;
-			if (frameNum < 0)
-				frameNum = maxTime;
-			boneAnimateReverse(root, frameNum);
-			frameNumFloat = frameNum;
-
-		}
-		if (animating == 1)  // Animación hacia adelante
-		{
-			frameNum++;
-			if (frameNum >= maxTime)
-				frameNum = 0;
-			boneAnimate(root, frameNum);
-			frameNumFloat = frameNum;
-		}
-		if (revAnim   == 1)  // Animación en reversa
-		{
-			frameNum--;
-			if (frameNum < 0)
-				frameNum = maxTime;
-			boneAnimateReverse(root, frameNum);
-			frameNumFloat = frameNum;
-		}
-        BeginDrawing();
+		UpdateGUI();
+		BeginDrawing();
         ClearBackground(GRAY);		
-		//Toggles
+		DrawGUI();
+		/*/Toggles
 		DrawRectangleRec((Rectangle){10, SCREEN_HEIGHT - 170, 130, 115},  WHITE);
 		GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 160, 50, 30}, "Draw Bones", &drawBonesEnabled);
 		if (GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 125, 50, 30}, "Animating", &animating))	
@@ -246,7 +215,7 @@ int main(void)
             DrawText("Keyframe encontrado", 10, 130, 20, GREEN);
 		else
 			DrawText("Keyframe no encontrado", 10, 130, 20, RED);
-
+*/
 		//boneAnimate(root, frameNum);
 
 		meshDraw(&body, root, frameNum);
