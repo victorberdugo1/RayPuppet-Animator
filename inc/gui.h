@@ -16,6 +16,7 @@ extern float frameNumFloat;
 void InitializeGUI(void);
 void UpdateGUI(void);
 void DrawGUI(void);
+int UpdateBoneProperties(Bone* bone, int time);
 
 #endif // GUI_H
 
