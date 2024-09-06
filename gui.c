@@ -20,19 +20,20 @@ bool forwAnim = 0;
 bool revAnim = 0;
 int keyframeStatus = 0;
 float frameNumFloat;
-bool drawBonesEnabled = true;
+bool drawBones = true;
 int direction = 0 ;
-float newSliderValue;
+//float newSliderValue;
 float tempLength = 0.0f;
 float tempAngle = 0.0f;
 bool tempValuesSet = false;
+float cameraZoom = 1.0f;
 
 void ResetBoneToOriginalState(Bone* bone)
 {
 	if (tempValuesSet)
-	{
+	{	
 		bone->l = tempLength;
-		bone->a = tempAngle; 
+		bone->a = tempAngle;
 		tempValuesSet = false;
 	}
 }
@@ -95,7 +96,8 @@ int UpdateBoneProperties(Bone* bone, int time)
 		}
 	}
 	return found;
-}
+}            
+
 
 void HandleDirectionChange(int newDirection, int maxTime)
 {
@@ -138,13 +140,14 @@ void UpdateGUI(void)
 {
 	if (IsKeyPressed(KEY_P))
 	{
+		if (tempValuesSet)
+			ResetBoneToOriginalState(currentBone);
 		HandleDirectionChange(1, maxTime);
 		frameNumFloat++;
 		if (frameNumFloat > maxTime)
 			frameNumFloat = 0;
 		UpdateAnimationWithSlider(frameNumFloat, maxTime);
-		if (tempValuesSet)
-			ResetBoneToOriginalState(currentBone);
+
 	}
 	else if (IsKeyPressed(KEY_O))
 	{
@@ -220,29 +223,43 @@ void InitializeGUI(void)
 void DrawGUI(void)
 {
 	// Toggles
-	DrawRectangleRec((Rectangle){10, SCREEN_HEIGHT - 165, 130, 110}, WHITE);
-	GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 160, 50, 30}, "Draw Bones", &drawBonesEnabled);
-	if (GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 125, 50, 30}, "Animating", &forwAnim))
+	float z = camera.zoom;
+
+	int originalTextSize = GuiGetStyle(DEFAULT, TEXT_SIZE);
+	GuiSetStyle(DEFAULT, TEXT_SIZE, (int)(originalTextSize * z * 1.2));
+	DrawRectangleRec((Rectangle){10 * z, (SCREEN_HEIGHT - 165) * z, 140 * z, 100 * z}, WHITE);
+	GuiCheckBox((Rectangle){20 * z, (SCREEN_HEIGHT - 160) * z, 50 * z, 30 * z}, "Draw Bones", &drawBones);
+
+	if (GuiCheckBox((Rectangle){20 * z,(SCREEN_HEIGHT - 130) * z,50 * z,30 * z},"Animating", &forwAnim))
 		revAnim = false;
-	if (GuiCheckBox((Rectangle){20, SCREEN_HEIGHT - 90, 50, 30}, "Reverse", &revAnim))
+
+	if (GuiCheckBox((Rectangle){20 * z, (SCREEN_HEIGHT - 100) * z, 50 * z, 30 * z}, "Reverse", &revAnim))
 		forwAnim = false;
 
 	// Draw Panel
-	BeginScissorMode(scrollPanelBounds.x, scrollPanelBounds.y, 
-			scrollPanelBounds.width, scrollPanelBounds.height);
-	GuiScrollPanel(scrollPanelBounds, NULL, contentBounds, &scrollOffset, NULL);
-	for (int i = 0; i < boneCount; i++)
-	{
+	Rectangle scaledPanel = (Rectangle){scrollPanelBounds.x * z, scrollPanelBounds.y * z, 
+		scrollPanelBounds.width * z, scrollPanelBounds.height * z};
+	Rectangle scaledContent = (Rectangle){contentBounds.x * z, contentBounds.y * z, 
+		contentBounds.width * z, contentBounds.height * z};
+
+	scaledContent.height = boneCount * 30 * z; // Altura dinámica basada en la cantidad de huesos
+
+	BeginScissorMode(scaledPanel.x, scaledPanel.y, scaledPanel.width, scaledPanel.height);
+	GuiScrollPanel(scaledPanel, NULL, scaledContent, &scrollOffset, NULL);
+
+	for (int i = 0; i < boneCount; i++) {
 		if (bones[i]->keyframe[0].partex != -1)
 			GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(BLUE));
 		else
 			GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(GRAY));
 
-		Rectangle buttonRect = (Rectangle){scrollPanelBounds.x, 
-			scrollPanelBounds.y + i * 30 + scrollOffset.y, scrollPanelBounds.width - 20, 20};
+		Rectangle buttonRect = (Rectangle){
+			scaledPanel.x, 
+				(scaledPanel.y + i * 30 * z + scrollOffset.y), 
+				scaledPanel.width - 20 * z, 20 * z
+		};
 
-		if (GuiButton(buttonRect, bones[i]->name))
-		{
+		if (GuiButton(buttonRect, bones[i]->name)) {
 			if (tempValuesSet)
 				ResetBoneToOriginalState(currentBone);
 			selectedBone = i;
@@ -250,44 +267,43 @@ void DrawGUI(void)
 			memset(isKeyframe, 0, sizeof(isKeyframe));
 			if (currentBone != NULL)
 				for (int j = 0; j < currentBone->keyframeCount; j++)
-				{
-					//currentBone->keyframe[j].coll = 4;
 					if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
 						isKeyframe[currentBone->keyframe[j].time] = true;
-				}
 		}
 	}
 	EndScissorMode();
+
 	// Draw the slider
-	if (!forwAnim & !revAnim)
-	{
-		Rectangle sliderBounds = (Rectangle){20, SCREEN_HEIGHT - 30, SCREEN_WIDTH - 40, 20};
-		newSliderValue = GuiSlider(sliderBounds, "", NULL, &frameNumFloat, 0.0f, (float)maxTime);
+	if (!forwAnim & !revAnim) {
+		Rectangle sliderBounds = (Rectangle){20 * z, (SCREEN_HEIGHT - 30) * z, 
+			(SCREEN_WIDTH - 40) * z, 20 * z};
+		GuiSlider(sliderBounds, "", NULL, &frameNumFloat, 0.0f, (float)maxTime);
 
 		if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) &&
-				CheckCollisionPointRec(GetMousePosition(), sliderBounds)) 
-		{
-			if (tempValuesSet)
-			{
-				ResetBoneToOriginalState(currentBone);	
-			}
+				CheckCollisionPointRec(GetMousePosition(), sliderBounds)) {
+			if (tempValuesSet) 
+				ResetBoneToOriginalState(currentBone);    
 		}
 		UpdateAnimationWithSlider(frameNumFloat, maxTime);
 
-		for (int i = 0; i <= maxTime; i++)
-		{
-			float posX = sliderBounds.x + (i * ((sliderBounds.width - 20) / (float)maxTime));
+		for (int i = 0; i <= maxTime; i++) {
+			float posX = sliderBounds.x + (i * ((sliderBounds.width - 20 * z) / (float)maxTime));
 			Color textColor = isKeyframe[i] ? GREEN : WHITE;
-			DrawText(TextFormat("%d", i), posX + 5, sliderBounds.y - 20, 15, textColor);
+
+			DrawText(TextFormat("%d", i), posX, sliderBounds.y - 25 * z, 15 * z, textColor);
 		}
 	}
+
 	// Info
-	DrawText(TextFormat("Bone: %s", currentBone ? currentBone->name : "None"), 10, 40, 20, WHITE);
-	DrawText(TextFormat("Length: %.2f", currentBone ? currentBone->l : 0.0f), 10, 70, 20, WHITE);
-	DrawText(TextFormat("Angle: %.2f", currentBone ? currentBone->a : 0.0f), 10, 100, 20, WHITE);
-	DrawText(TextFormat("Frame Number: %d", frameNum), 10, 10, 20, WHITE);
+	DrawText(TextFormat("Bone: %s", currentBone ? currentBone->name : "None"),10 * z,40 * z,20 * z, WHITE);
+	DrawText(TextFormat("Length: %.2f", currentBone ? currentBone->l : 0.0f),10 * z,70 * z, 20 * z, WHITE);
+	DrawText(TextFormat("Angle: %.2f", currentBone ? currentBone->a : 0.0f),10 * z,100 * z, 20 * z, WHITE);
+	DrawText(TextFormat("Frame Number: %d", frameNum), 10 * z, 10 * z, 20 * z, WHITE);
+
 	if (keyframeStatus)
-		DrawText("Keyframe encontrado", 10, 130, 20, GREEN);
+		DrawText("Keyframe encontrado", 10 * z, 130 * z, 20 * z, GREEN);
 	else
-		DrawText("Keyframe no encontrado", 10, 130, 20, RED);
+		DrawText("Keyframe no encontrado", 10 * z, 130 * z, 20 * z, RED);
+
+	GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
 }

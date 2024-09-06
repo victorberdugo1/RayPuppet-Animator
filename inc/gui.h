@@ -9,8 +9,9 @@ extern bool forwAnim;
 extern bool revAnim;
 extern float frameNumFloat;
 extern int keyframeStatus;
-extern bool drawBonesEnabled;
+extern bool drawBones;
 extern float frameNumFloat;
+extern Camera2D camera;
 
 // Declaración de funciones
 void InitializeGUI(void);
