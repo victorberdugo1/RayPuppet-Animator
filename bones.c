@@ -9,7 +9,8 @@
 char		*currentName = NULL;
 BonesXY		bonesdata[MAX_BONECOUNT];
 Texture2D	textures[20];
-int			coordenada,contTxt;
+int			coordenada;
+int			contTxt;
 float		cut_x,cut_y,cut_xb,cut_yb;
 char		nameFTx[99];
 uint32_t	maxTime = 0;

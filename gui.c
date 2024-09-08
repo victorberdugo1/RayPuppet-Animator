@@ -22,7 +22,6 @@ int keyframeStatus = 0;
 float frameNumFloat;
 bool drawBones = true;
 int direction = 0 ;
-//float newSliderValue;
 float tempLength = 0.0f;
 float tempAngle = 0.0f;
 bool tempValuesSet = false;
@@ -54,9 +53,9 @@ int UpdateBoneProperties(Bone* bone, int time)
 			{
 				if (!tempValuesSet)
 				{
-					tempLength = bone->l;       // Guardar longitud original
-					tempAngle = bone->a;        // Guardar ángulo original
-					tempValuesSet = true;       // Marcar como guardado
+					tempLength = bone->l;
+					tempAngle = bone->a;
+					tempValuesSet = true;
 				}
 				bone->l += 1.0f;
 				bone->keyframe[i].length += 1.0f;
@@ -118,7 +117,7 @@ void HandleDirectionChange(int newDirection, int maxTime)
 				boneAnimateReverse(root, --currentFrame);
 				frameNum = currentFrame;
 			}
-		direction = newDirection; // Actualizamos la dirección
+		direction = newDirection;
 	}
 }
 
@@ -146,7 +145,7 @@ int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, flo
 		if (bones[i]->keyframe[0].partex == -1)
 			continue;
 
-		float destWidth = 100.0f * zoom; // Ajustar según el tamaño real
+		float destWidth = 100.0f * zoom;
 		float destHeight = 100.0f * zoom;
 		float centerX = bones[i]->x * zoom;
 		float centerY = bones[i]->y * zoom;
@@ -156,61 +155,105 @@ int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, flo
 			clickPosition.y >= (centerY - destHeight / 2) &&
 			clickPosition.y <= (centerY + destHeight / 2))
 		{
-			// Si se hace clic en un hueso válido, contar las texturas hasta ese hueso
 			int selectedBoneIndex = i;
 			for (int j = 0; j <= selectedBoneIndex; j++)
-			{
 				if (bones[j]->keyframe[0].partex > -1)
-				{
 					textureCount++;
-				}
-			}
-			return textureCount; // Retorna el número de la textura
+			return textureCount;
 		}          
 	}
-	return -1; // Si no se encuentra ningún hueso en el clic
+	return -1;
 }
 
 void UpdateGUI(void)
 {
-
-    
-Vector2 mousePosition = GetMousePosition();
+	Vector2 mousePosition = GetMousePosition();
 
 	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
 	{
 		int textureIndex = GetBoneTextureIndex(mousePosition, bones, boneCount, camera.zoom);
-		
+
 		if (textureIndex > 0)
 		{
-			// Asegúrate de que el índice esté dentro del rango de texturas
-			if (textureIndex >= 0 && textureIndex < 20) // Ajusta 
+			if (textureIndex >= 0 && textureIndex < 20) 
 			{
-				selectedTexture = textures[textureIndex]; // Ajuste del índice para acceso a la textura
+				selectedTexture = textures[textureIndex];
 				showTexture = true;
 			}
 		}
 	}
-
+	/*
 	if (showTexture && selectedTexture.id != 0)
 	{
-		// Definir el área de la textura que se va a mostrar (mostrar la textura completa)
 		Rectangle sourceRect = { 0, 0, (float)selectedTexture.width, (float)selectedTexture.height };
-
-		// Definir el rectángulo de destino en la pantalla
 		Rectangle destRect = { 
-			(GetScreenWidth() - selectedTexture.width) / 2.0f, // X en la pantalla (centrado)
-			(GetScreenHeight() - selectedTexture.height) / 2.0f, // Y en la pantalla (centrado)
-			(float)selectedTexture.width, // Ancho del cuadrado
-			(float)selectedTexture.height // Alto del cuadrado
+			(GetScreenWidth() - (selectedTexture.width * camera.zoom)) / 2.0f,  
+			(GetScreenHeight() - (selectedTexture.height * camera.zoom)) / 2.0f,
+			(float)selectedTexture.width * camera.zoom, // Ancho del cuadrado
+			(float)selectedTexture.height * camera.zoom// Alto del cuadrado
 		};
-
 		Vector2 origin = { 0, 0 };
-
-		// Dibuja la textura en pantalla
 		DrawTexturePro(selectedTexture, sourceRect, destRect, origin, 0.0f, WHITE);
-	}
+	}*/
+	if (showTexture && selectedTexture.id != 0)
+{
+    int gridSize = contTxt;  // Ej: sqrt(4) = 2 -> Divisiones 2x2
+    float partWidth = (float)selectedTexture.width / gridSize;
+    float partHeight = (float)selectedTexture.height / gridSize;
 
+    // Calculamos el rectángulo de destino (donde se dibujará la textura escalada)
+    Rectangle destRect = {
+        (GetScreenWidth() - (selectedTexture.width * camera.zoom)) / 2.0f,
+        (GetScreenHeight() - (selectedTexture.height * camera.zoom)) / 2.0f,
+        (float)selectedTexture.width * camera.zoom,
+        (float)selectedTexture.height * camera.zoom
+    };
+
+    // Dibujamos la textura completa
+    Rectangle sourceRect = { 0, 0, (float)selectedTexture.width, (float)selectedTexture.height };
+    Vector2 origin = { 0, 0 };
+    DrawTexturePro(selectedTexture, sourceRect, destRect, origin, 0.0f, WHITE);
+
+    // Obtener la posición del ratón
+    Vector2 mousePosition = GetMousePosition();
+
+    // Verificar si el ratón está dentro del área de la textura
+    if (CheckCollisionPointRec(mousePosition, destRect))
+    {
+        // Calcular la posición relativa del ratón dentro de la textura
+        float relativeMouseX = (mousePosition.x - destRect.x) / camera.zoom;
+        float relativeMouseY = (mousePosition.y - destRect.y) / camera.zoom;
+
+        // Determinar en qué parte de la cuadrícula está el ratón
+        int gridX = (int)(relativeMouseX / partWidth);
+        int gridY = (int)(relativeMouseY / partHeight);
+
+        // Dibujar el cuadrado iluminado sobre la parte de la textura donde está el ratón
+        float highlightX = destRect.x + (gridX * partWidth * camera.zoom);
+        float highlightY = destRect.y + (gridY * partHeight * camera.zoom);
+        float highlightWidth = partWidth * camera.zoom;
+        float highlightHeight = partHeight * camera.zoom;
+
+        // Dibujar un rectángulo semi-transparente para resaltar
+        DrawRectangle(highlightX, highlightY, highlightWidth, highlightHeight, Fade(RED, 0.5f));
+    }
+
+    // Dibujamos los bordes de los cuadrados sobre cada división de la textura
+    for (int y = 0; y < gridSize; y++)
+    {
+        for (int x = 0; x < gridSize; x++)
+        {
+            float rectX = destRect.x + (partWidth * x * camera.zoom);
+            float rectY = destRect.y + (partHeight * y * camera.zoom);
+            float rectWidth = partWidth * camera.zoom;
+            float rectHeight = partHeight * camera.zoom;
+
+            DrawRectangleLines(rectX, rectY, rectWidth, rectHeight, RED);
+        }
+    }
+}
+
+	
 	if (IsKeyPressed(KEY_P))
 	{
 		if (tempValuesSet)
