@@ -78,6 +78,7 @@ int main(void)
         DrawBones(root, drawBones);
 
 		EndMode2D(); 
+
 		EndDrawing();
 	}
 	boneDumpAnim(root, 0);

@@ -68,8 +68,11 @@ typedef struct _BonesXY{
 extern char *currentName;
 extern BonesXY bonesdata[MAX_BONECOUNT];
 extern uint32_t maxTime;
-
-
+extern float cut_x;
+extern float cut_y;
+extern float cut_xb;
+extern float cut_yb;
+extern Texture2D textures[];
 /* Function declarations */
 Bone* boneFreeTree(Bone *root);
 void boneDumpAnim(Bone *root, uint8_t level);

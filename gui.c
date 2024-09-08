@@ -27,6 +27,8 @@ float tempLength = 0.0f;
 float tempAngle = 0.0f;
 bool tempValuesSet = false;
 float cameraZoom = 1.0f;
+static Texture2D selectedTexture = { 0 };
+static bool showTexture = false;
 
 void ResetBoneToOriginalState(Bone* bone)
 {
@@ -98,7 +100,6 @@ int UpdateBoneProperties(Bone* bone, int time)
 	return found;
 }            
 
-
 void HandleDirectionChange(int newDirection, int maxTime)
 {
 	int currentFrame = frameNum;
@@ -136,8 +137,80 @@ void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 	}
 }
 
+int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, float zoom)
+{
+	int textureCount = 0;
+
+	for (int i = 0; i < boneCount; i++)
+	{
+		if (bones[i]->keyframe[0].partex == -1)
+			continue;
+
+		float destWidth = 100.0f * zoom; // Ajustar según el tamaño real
+		float destHeight = 100.0f * zoom;
+		float centerX = bones[i]->x * zoom;
+		float centerY = bones[i]->y * zoom;
+
+		if (clickPosition.x >= (centerX - destWidth / 2) &&
+			clickPosition.x <= (centerX + destWidth / 2) &&
+			clickPosition.y >= (centerY - destHeight / 2) &&
+			clickPosition.y <= (centerY + destHeight / 2))
+		{
+			// Si se hace clic en un hueso válido, contar las texturas hasta ese hueso
+			int selectedBoneIndex = i;
+			for (int j = 0; j <= selectedBoneIndex; j++)
+			{
+				if (bones[j]->keyframe[0].partex > -1)
+				{
+					textureCount++;
+				}
+			}
+			return textureCount; // Retorna el número de la textura
+		}          
+	}
+	return -1; // Si no se encuentra ningún hueso en el clic
+}
+
 void UpdateGUI(void)
 {
+
+    
+Vector2 mousePosition = GetMousePosition();
+
+	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+	{
+		int textureIndex = GetBoneTextureIndex(mousePosition, bones, boneCount, camera.zoom);
+		
+		if (textureIndex > 0)
+		{
+			// Asegúrate de que el índice esté dentro del rango de texturas
+			if (textureIndex >= 0 && textureIndex < 20) // Ajusta 
+			{
+				selectedTexture = textures[textureIndex]; // Ajuste del índice para acceso a la textura
+				showTexture = true;
+			}
+		}
+	}
+
+	if (showTexture && selectedTexture.id != 0)
+	{
+		// Definir el área de la textura que se va a mostrar (mostrar la textura completa)
+		Rectangle sourceRect = { 0, 0, (float)selectedTexture.width, (float)selectedTexture.height };
+
+		// Definir el rectángulo de destino en la pantalla
+		Rectangle destRect = { 
+			(GetScreenWidth() - selectedTexture.width) / 2.0f, // X en la pantalla (centrado)
+			(GetScreenHeight() - selectedTexture.height) / 2.0f, // Y en la pantalla (centrado)
+			(float)selectedTexture.width, // Ancho del cuadrado
+			(float)selectedTexture.height // Alto del cuadrado
+		};
+
+		Vector2 origin = { 0, 0 };
+
+		// Dibuja la textura en pantalla
+		DrawTexturePro(selectedTexture, sourceRect, destRect, origin, 0.0f, WHITE);
+	}
+
 	if (IsKeyPressed(KEY_P))
 	{
 		if (tempValuesSet)
@@ -285,7 +358,7 @@ void DrawGUI(void)
 				ResetBoneToOriginalState(currentBone);    
 		}
 		UpdateAnimationWithSlider(frameNumFloat, maxTime);
-
+frameNumFloat = (int)(frameNumFloat + 0.5f);
 		for (int i = 0; i <= maxTime; i++) {
 			float posX = sliderBounds.x + (i * ((sliderBounds.width - 20 * z) / (float)maxTime));
 			Color textColor = isKeyframe[i] ? GREEN : WHITE;
