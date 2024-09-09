@@ -28,7 +28,10 @@ bool tempValuesSet = false;
 float cameraZoom = 1.0f;
 static Texture2D selectedTexture = { 0 };
 static bool showTexture = false;
-bool textureSelected = false;
+//bool textureSelected = false;
+bool textureJustClosed = false;
+
+
 
 void ResetBoneToOriginalState(Bone* bone)
 {
@@ -152,14 +155,18 @@ int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, flo
 		float centerY = bones[i]->y * zoom;
 
 		if (clickPosition.x >= (centerX - destWidth / 2) &&
-			clickPosition.x <= (centerX + destWidth / 2) &&
-			clickPosition.y >= (centerY - destHeight / 2) &&
-			clickPosition.y <= (centerY + destHeight / 2))
+				clickPosition.x <= (centerX + destWidth / 2) &&
+				clickPosition.y >= (centerY - destHeight / 2) &&
+				clickPosition.y <= (centerY + destHeight / 2))
 		{
 			int selectedBoneIndex = i;
+
 			for (int j = 0; j <= selectedBoneIndex; j++)
+			{
 				if (bones[j]->keyframe[0].partex > -1)
 					textureCount++;
+			}
+			currentBone = bones[selectedBoneIndex];
 			return textureCount;
 		}          
 	}
@@ -171,10 +178,17 @@ void DrawOnTop(Bone* bone, int time)
 
 	Vector2 mousePosition = GetMousePosition();
 
-
-
-	if (showTexture && selectedTexture.id != 0)
+	if (textureJustClosed)
 	{
+		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) // Esperar a que se suelte el clic
+		{
+			textureJustClosed = false; // Permitir clics en los huesos de nuevo
+		}
+		return; // Bloquear clics hasta que se libere el botón
+	}
+
+    if (showTexture && selectedTexture.id != 0)
+    {
 		int gridSize = contTxt; 
 		float partWidth = (float)selectedTexture.width / gridSize;
 		float partHeight = (float)selectedTexture.height / gridSize;
@@ -213,6 +227,7 @@ void DrawOnTop(Bone* bone, int time)
 					{
 						bone->keyframe[i].partex = gridX + gridY * gridSize;
 						showTexture = false;
+						textureJustClosed = true;
 					}
 				}
 			}
@@ -230,15 +245,20 @@ void DrawOnTop(Bone* bone, int time)
 		}
 	}
 
-	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !showTexture )
-	{
-		int textureIndex = GetBoneTextureIndex(mousePosition, bones, boneCount, camera.zoom);
-
-		if (textureIndex > 0)
-			if (textureIndex >= 0 && textureIndex < 20)
+	
+    if (!textureJustClosed)
+    {
+	for (int i = 0; i < bone->keyframeCount; i++)
+		if (bone->keyframe[i].time == time)
+			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && bone->keyframe[0].partex > -1)
 			{
-				selectedTexture = textures[textureIndex];
-				showTexture = true;
+				int textureIndex = GetBoneTextureIndex(mousePosition, bones, boneCount, camera.zoom);
+				if (textureIndex > 0)
+					if (textureIndex >= 0 && textureIndex < 20)
+					{
+						selectedTexture = textures[textureIndex];
+						showTexture = true;
+					}
 			}
 	}
 }
@@ -350,12 +370,18 @@ void DrawGUI(void)
 	Rectangle scaledContent = (Rectangle){contentBounds.x * z, contentBounds.y * z, 
 		contentBounds.width * z, contentBounds.height * z};
 
+	int visibleButtonIndex = 0;
+
 	scaledContent.height = boneCount * 30 * z; // Altura dinámica basada en la cantidad de huesos
 
 	BeginScissorMode(scaledPanel.x, scaledPanel.y, scaledPanel.width, scaledPanel.height);
+	
 	GuiScrollPanel(scaledPanel, NULL, scaledContent, &scrollOffset, NULL);
 
 	for (int i = 0; i < boneCount; i++) {
+		if (showTexture && bones[i]->keyframe[0].partex == -1) {
+			continue; // Saltar este botón y pasar al siguiente
+		}
 		if (bones[i]->keyframe[0].partex != -1)
 			GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(BLUE));
 		else
@@ -363,7 +389,7 @@ void DrawGUI(void)
 
 		Rectangle buttonRect = (Rectangle){
 			scaledPanel.x, 
-				(scaledPanel.y + i * 30 * z + scrollOffset.y), 
+				(scaledPanel.y + visibleButtonIndex * 30 * z + scrollOffset.y), 
 				scaledPanel.width - 20 * z, 20 * z
 		};
 
@@ -377,7 +403,19 @@ void DrawGUI(void)
 				for (int j = 0; j < currentBone->keyframeCount; j++)
 					if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
 						isKeyframe[currentBone->keyframe[j].time] = true;
+			// Si se obtiene un índice válido, actualizar la textura seleccionada
+			if (showTexture) {
+				int textureCount = 0; 
+				for (int j = 0; j <= selectedBone; j++)
+					if (bones[j] != NULL && bones[j]->keyframe[0].partex > -1)
+						textureCount++;
+				selectedTexture = textures[textureCount];
+				showTexture = true;  // Mostrar la textura
+			}
+			else
+				showTexture = false; // No hay textura para mostrar
 		}
+		visibleButtonIndex++;
 	}
 	EndScissorMode();
 
@@ -393,7 +431,7 @@ void DrawGUI(void)
 				ResetBoneToOriginalState(currentBone);    
 		}
 		UpdateAnimationWithSlider(frameNumFloat, maxTime);
-frameNumFloat = (int)(frameNumFloat + 0.5f);
+		frameNumFloat = (int)(frameNumFloat + 0.5f);
 		for (int i = 0; i <= maxTime; i++) {
 			float posX = sliderBounds.x + (i * ((sliderBounds.width - 20 * z) / (float)maxTime));
 			Color textColor = isKeyframe[i] ? GREEN : WHITE;
