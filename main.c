@@ -16,8 +16,6 @@ int frameNum = 0;
 Bone* root = NULL;
 Camera2D camera = { 0 };
 
-
-
 int main(void)
 {
 	SetTraceLogLevel(LOG_NONE);
@@ -31,8 +29,8 @@ int main(void)
 
 	SetTargetFPS(60);
 
-	rlEnableDepthTest();
-	rlEnableColorBlend();
+	//rlEnableDepthTest();
+	//rlEnableColorBlend();
 
     t_mesh body;
     root = boneLoadStructure("Bbs_Skel.txt");
@@ -73,11 +71,12 @@ int main(void)
 		DrawGUI();
 
 		BeginMode2D(camera);
-
 		meshDraw(&body, root, frameNum);
         DrawBones(root, drawBones);
+		EndMode2D();
 
-		EndMode2D(); 
+		DrawOnTop(currentBone, frameNum);
+
 
 		EndDrawing();
 	}

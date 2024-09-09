@@ -28,6 +28,7 @@ bool tempValuesSet = false;
 float cameraZoom = 1.0f;
 static Texture2D selectedTexture = { 0 };
 static bool showTexture = false;
+bool textureSelected = false;
 
 void ResetBoneToOriginalState(Bone* bone)
 {
@@ -165,95 +166,86 @@ int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, flo
 	return -1;
 }
 
-void UpdateGUI(void)
+void DrawOnTop(Bone* bone, int time)
 {
+
 	Vector2 mousePosition = GetMousePosition();
 
-	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+
+
+	if (showTexture && selectedTexture.id != 0)
+	{
+		int gridSize = contTxt; 
+		float partWidth = (float)selectedTexture.width / gridSize;
+		float partHeight = (float)selectedTexture.height / gridSize;
+
+		Rectangle destRect = {
+			(GetScreenWidth() - (selectedTexture.width * camera.zoom)) / 2.0f,
+			(GetScreenHeight() - (selectedTexture.height * camera.zoom)) / 2.0f,
+			(float)selectedTexture.width * camera.zoom,
+			(float)selectedTexture.height * camera.zoom
+		};
+
+		Rectangle sourceRect = { 0, 0, (float)selectedTexture.width, (float)selectedTexture.height };
+		Vector2 origin = { 0, 0 };
+		DrawTexturePro(selectedTexture, sourceRect, destRect, origin, 0.0f, WHITE);
+
+		if (CheckCollisionPointRec(mousePosition, destRect))
+		{
+			float relativeMouseX = (mousePosition.x - destRect.x) / camera.zoom;
+			float relativeMouseY = (mousePosition.y - destRect.y) / camera.zoom;
+
+			int gridX = (int)(relativeMouseX / partWidth);
+			int gridY = (int)(relativeMouseY / partHeight);
+
+			float highlightX = destRect.x + (gridX * partWidth * camera.zoom);
+			float highlightY = destRect.y + (gridY * partHeight * camera.zoom);
+			float highlightWidth = partWidth * camera.zoom;
+			float highlightHeight = partHeight * camera.zoom;
+
+			DrawRectangle(highlightX, highlightY, highlightWidth, highlightHeight, Fade(RED, 0.5f));
+
+			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+			{
+				for (int i = 0; i < bone->keyframeCount; i++)
+				{
+					if (bone->keyframe[i].time == time)
+					{
+						bone->keyframe[i].partex = gridX + gridY * gridSize;
+						showTexture = false;
+					}
+				}
+			}
+		}
+
+		for (int y = 0; y < gridSize; y++)
+		{
+			for (int x = 0; x < gridSize; x++)
+			{
+				float rectX = destRect.x + (x * partWidth * camera.zoom);
+				float rectY = destRect.y + (y * partHeight * camera.zoom);
+
+				DrawRectangleLines(rectX, rectY, partWidth * camera.zoom, partHeight * camera.zoom, RED);
+			}
+		}
+	}
+
+	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !showTexture )
 	{
 		int textureIndex = GetBoneTextureIndex(mousePosition, bones, boneCount, camera.zoom);
 
 		if (textureIndex > 0)
-		{
-			if (textureIndex >= 0 && textureIndex < 20) 
+			if (textureIndex >= 0 && textureIndex < 20)
 			{
 				selectedTexture = textures[textureIndex];
 				showTexture = true;
 			}
-		}
 	}
-	/*
-	if (showTexture && selectedTexture.id != 0)
-	{
-		Rectangle sourceRect = { 0, 0, (float)selectedTexture.width, (float)selectedTexture.height };
-		Rectangle destRect = { 
-			(GetScreenWidth() - (selectedTexture.width * camera.zoom)) / 2.0f,  
-			(GetScreenHeight() - (selectedTexture.height * camera.zoom)) / 2.0f,
-			(float)selectedTexture.width * camera.zoom, // Ancho del cuadrado
-			(float)selectedTexture.height * camera.zoom// Alto del cuadrado
-		};
-		Vector2 origin = { 0, 0 };
-		DrawTexturePro(selectedTexture, sourceRect, destRect, origin, 0.0f, WHITE);
-	}*/
-	if (showTexture && selectedTexture.id != 0)
-{
-    int gridSize = contTxt;  // Ej: sqrt(4) = 2 -> Divisiones 2x2
-    float partWidth = (float)selectedTexture.width / gridSize;
-    float partHeight = (float)selectedTexture.height / gridSize;
-
-    // Calculamos el rectángulo de destino (donde se dibujará la textura escalada)
-    Rectangle destRect = {
-        (GetScreenWidth() - (selectedTexture.width * camera.zoom)) / 2.0f,
-        (GetScreenHeight() - (selectedTexture.height * camera.zoom)) / 2.0f,
-        (float)selectedTexture.width * camera.zoom,
-        (float)selectedTexture.height * camera.zoom
-    };
-
-    // Dibujamos la textura completa
-    Rectangle sourceRect = { 0, 0, (float)selectedTexture.width, (float)selectedTexture.height };
-    Vector2 origin = { 0, 0 };
-    DrawTexturePro(selectedTexture, sourceRect, destRect, origin, 0.0f, WHITE);
-
-    // Obtener la posición del ratón
-    Vector2 mousePosition = GetMousePosition();
-
-    // Verificar si el ratón está dentro del área de la textura
-    if (CheckCollisionPointRec(mousePosition, destRect))
-    {
-        // Calcular la posición relativa del ratón dentro de la textura
-        float relativeMouseX = (mousePosition.x - destRect.x) / camera.zoom;
-        float relativeMouseY = (mousePosition.y - destRect.y) / camera.zoom;
-
-        // Determinar en qué parte de la cuadrícula está el ratón
-        int gridX = (int)(relativeMouseX / partWidth);
-        int gridY = (int)(relativeMouseY / partHeight);
-
-        // Dibujar el cuadrado iluminado sobre la parte de la textura donde está el ratón
-        float highlightX = destRect.x + (gridX * partWidth * camera.zoom);
-        float highlightY = destRect.y + (gridY * partHeight * camera.zoom);
-        float highlightWidth = partWidth * camera.zoom;
-        float highlightHeight = partHeight * camera.zoom;
-
-        // Dibujar un rectángulo semi-transparente para resaltar
-        DrawRectangle(highlightX, highlightY, highlightWidth, highlightHeight, Fade(RED, 0.5f));
-    }
-
-    // Dibujamos los bordes de los cuadrados sobre cada división de la textura
-    for (int y = 0; y < gridSize; y++)
-    {
-        for (int x = 0; x < gridSize; x++)
-        {
-            float rectX = destRect.x + (partWidth * x * camera.zoom);
-            float rectY = destRect.y + (partHeight * y * camera.zoom);
-            float rectWidth = partWidth * camera.zoom;
-            float rectHeight = partHeight * camera.zoom;
-
-            DrawRectangleLines(rectX, rectY, rectWidth, rectHeight, RED);
-        }
-    }
 }
 
-	
+void UpdateGUI(void)
+{
+
 	if (IsKeyPressed(KEY_P))
 	{
 		if (tempValuesSet)

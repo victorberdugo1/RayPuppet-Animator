@@ -236,9 +236,8 @@ Bone* boneLoadStructure(const char *path)
 	Bone *root = NULL, *temp = NULL;
 	FILE *file;
 	float x, y, angle, length;
-	int layer, depth, actualLevel = 0, flags, partex, coll;
-	uint32_t time;
-	char name[99], depthStr[99], buffer[4096],  *ptr, *token, *rest;
+	int depth, actualLevel = 0, flags;
+	char name[99], depthStr[99], buffer[4096];
 
 	if (!(file = fopen(path, "r")))
 	{
@@ -536,16 +535,9 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
 				break;
 			case 5:
 				break;
-			case 6:
-				break;
-			case 7:
-				break;
-			case 8:
-				break;
 			default:
 				break;
 		}
-
 		DrawTexturePro(texture, sourceRect, destRect, origin, totalAngle, WHITE);
 	}
 }
