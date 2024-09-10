@@ -30,7 +30,7 @@ static Texture2D selectedTexture = { 0 };
 static bool showTexture = false;
 //bool textureSelected = false;
 bool textureJustClosed = false;
-
+int layerValue = 0;
 
 
 void ResetBoneToOriginalState(Bone* bone)
@@ -228,6 +228,7 @@ void DrawOnTop(Bone* bone, int time)
 						bone->keyframe[i].partex = gridX + gridY * gridSize;
 						showTexture = false;
 						textureJustClosed = true;
+
 					}
 				}
 			}
@@ -243,6 +244,62 @@ void DrawOnTop(Bone* bone, int time)
 				DrawRectangleLines(rectX, rectY, partWidth * camera.zoom, partHeight * camera.zoom, RED);
 			}
 		}
+		if (currentBone != NULL)
+        {
+            for (int i = 0; i < bone->keyframeCount; i++)
+            {
+                if (bone->keyframe[i].time == time)
+                {
+                    int partexIndex = bone->keyframe[i].partex;
+                    if (partexIndex >= 0 && partexIndex < gridSize * gridSize)
+                    {
+                        int partexX = partexIndex % gridSize;
+                        int partexY = partexIndex / gridSize;
+
+                        float highlightX = destRect.x + (partexX * partWidth * camera.zoom);
+                        float highlightY = destRect.y + (partexY * partHeight * camera.zoom);
+                        float highlightWidth = partWidth * camera.zoom;
+                        float highlightHeight = partHeight * camera.zoom;
+
+						// Marca la textura con un recuadro verde si coincide
+						DrawRectangleLines(highlightX, highlightY, 
+								highlightWidth, highlightHeight, BLUE);
+						DrawRectangleLinesEx((Rectangle){highlightX, highlightY, 
+								highlightWidth, highlightHeight}, 4, GREEN);
+
+					}
+                }
+            }
+        }
+
+float spinnerWidth = 100.0f * camera.zoom;
+float spinnerHeight = 20.0f * camera.zoom;
+Rectangle spinnerBounds = {
+    destRect.x + destRect.width + 20.0f * camera.zoom,
+    destRect.y,
+    spinnerWidth,
+    spinnerHeight
+};
+
+for (int i = 0; i < bone->keyframeCount; i++)
+{
+    if (bone->keyframe[i].time == time)
+    {
+        // Muestra y maneja el spinner si se encontró un keyframe
+        if (!GuiSpinner(spinnerBounds, "Layer", &layerValue, -5, 5, true))
+        {
+            // Actualiza el valor del layer en el keyframe
+            bone->keyframe[i].layer = layerValue;
+        }
+        else
+        {
+            layerValue = bone->keyframe[i].layer;
+        }
+        break;  // Sale del bucle una vez que el keyframe ha sido encontrado y manejado
+    }
+}
+
+
 	}
 
 	
