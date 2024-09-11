@@ -262,8 +262,6 @@ void DrawOnTop(Bone* bone, int time)
                         float highlightHeight = partHeight * camera.zoom;
 
 						// Marca la textura con un recuadro verde si coincide
-						DrawRectangleLines(highlightX, highlightY, 
-								highlightWidth, highlightHeight, BLUE);
 						DrawRectangleLinesEx((Rectangle){highlightX, highlightY, 
 								highlightWidth, highlightHeight}, 4, GREEN);
 
@@ -271,52 +269,49 @@ void DrawOnTop(Bone* bone, int time)
                 }
             }
         }
-
-float spinnerWidth = 100.0f * camera.zoom;
-float spinnerHeight = 20.0f * camera.zoom;
-Rectangle spinnerBounds = {
-    destRect.x + destRect.width + 20.0f * camera.zoom,
-    destRect.y,
-    spinnerWidth,
-    spinnerHeight
-};
-
-for (int i = 0; i < bone->keyframeCount; i++)
-{
-    if (bone->keyframe[i].time == time)
-    {
-        // Muestra y maneja el spinner si se encontró un keyframe
-        if (!GuiSpinner(spinnerBounds, "Layer", &layerValue, -5, 5, true))
-        {
-            // Actualiza el valor del layer en el keyframe
-            bone->keyframe[i].layer = layerValue;
-        }
-        else
-        {
-            layerValue = bone->keyframe[i].layer;
-        }
-        break;  // Sale del bucle una vez que el keyframe ha sido encontrado y manejado
-    }
-}
-
-
+		//GuiSpinner for Layer
+		int originalTextSize = GuiGetStyle(DEFAULT, TEXT_SIZE);
+		GuiSetStyle(DEFAULT, RAYGUI_ICON_SIZE, 200);
+		GuiSetStyle(DEFAULT, TEXT_SIZE, (int)(originalTextSize * camera.zoom * 1.8));
+		float spinnerWidth = 50.0f * camera.zoom;
+		float spinnerHeight = 30.0f * camera.zoom;
+		Rectangle spinnerBounds = {
+			destRect.x - 60.0f * camera.zoom,
+			destRect.y,
+			spinnerWidth,
+			spinnerHeight
+		};
+		int keyframeIndex = -1;
+		for (int i = 0; i < bone->keyframeCount; i++)
+			if (bone->keyframe[i].time == time)
+			{
+				keyframeIndex = i;
+				break;
+			}
+		if (keyframeIndex != -1)
+		{
+			int currentLayerValue = bone->keyframe[keyframeIndex].layer; 
+			if (!GuiSpinner(spinnerBounds, "#95# Layer", &currentLayerValue, -5, 5, false))
+				bone->keyframe[keyframeIndex].layer = currentLayerValue;
+		}
+		GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
 	}
 
-	
-    if (!textureJustClosed)
-    {
-	for (int i = 0; i < bone->keyframeCount; i++)
-		if (bone->keyframe[i].time == time)
-			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && bone->keyframe[0].partex > -1)
-			{
-				int textureIndex = GetBoneTextureIndex(mousePosition, bones, boneCount, camera.zoom);
-				if (textureIndex > 0)
-					if (textureIndex >= 0 && textureIndex < 20)
-					{
-						selectedTexture = textures[textureIndex];
-						showTexture = true;
-					}
-			}
+
+	if (!textureJustClosed)
+	{
+		for (int i = 0; i < bone->keyframeCount; i++)
+			if (bone->keyframe[i].time == time)
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && bone->keyframe[0].partex > -1)
+				{
+					int textureIndex = GetBoneTextureIndex(mousePosition, bones, boneCount, camera.zoom);
+					if (textureIndex > 0)
+						if (textureIndex >= 0 && textureIndex < 20)
+						{
+							selectedTexture = textures[textureIndex];
+							showTexture = true;
+						}
+				}
 	}
 }
 
@@ -413,12 +408,15 @@ void DrawGUI(void)
 	int originalTextSize = GuiGetStyle(DEFAULT, TEXT_SIZE);
 	GuiSetStyle(DEFAULT, TEXT_SIZE, (int)(originalTextSize * z * 1.2));
 	DrawRectangleRec((Rectangle){10 * z, (SCREEN_HEIGHT - 165) * z, 140 * z, 100 * z}, WHITE);
-	GuiCheckBox((Rectangle){20 * z, (SCREEN_HEIGHT - 160) * z, 50 * z, 30 * z}, "Draw Bones", &drawBones);
+	GuiToggle((Rectangle){20 * z, (SCREEN_HEIGHT - 160) * z, 125 * z, 30 * z},
+			"#152#Draw Bones", &drawBones);
 
-	if (GuiCheckBox((Rectangle){20 * z,(SCREEN_HEIGHT - 130) * z,50 * z,30 * z},"Animating", &forwAnim))
+	if (GuiCheckBox((Rectangle){20 * z,(SCREEN_HEIGHT - 130) * z,50 * z,30 * z},
+				"#119#Animating", &forwAnim))
 		revAnim = false;
 
-	if (GuiCheckBox((Rectangle){20 * z, (SCREEN_HEIGHT - 100) * z, 50 * z, 30 * z}, "Reverse", &revAnim))
+	if (GuiCheckBox((Rectangle){20 * z, (SCREEN_HEIGHT - 100) * z, 50 * z, 30 * z},
+				"#118#Reverse", &revAnim))
 		forwAnim = false;
 
 	// Draw Panel
