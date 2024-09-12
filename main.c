@@ -15,6 +15,7 @@ int selectedBone = 0;
 int frameNum = 0;
 Bone* root = NULL;
 Camera2D camera = { 0 };
+bool animMode = false;
 
 int main(void)
 {
@@ -22,6 +23,7 @@ int main(void)
 	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Bone Animation");
 	
 	SetWindowState(FLAG_WINDOW_RESIZABLE);
+	MaximizeWindow();
 
 	camera.target = (Vector2){ 0.0f, 0.0f };
 	camera.rotation = 0.0f;
@@ -66,16 +68,21 @@ int main(void)
 		
 		BeginDrawing();
 
-        ClearBackground(GRAY);		
-	
+		ClearBackground(GRAY);		
+
+
 		DrawGUI();
 
 		BeginMode2D(camera);
 		meshDraw(&body, root, frameNum);
         DrawBones(root, drawBones);
 		EndMode2D();
+		
+		if(animMode)
+			mouseAnimate(currentBone, frameNum);
+		else
+			DrawOnTop(currentBone, frameNum);
 
-		DrawOnTop(currentBone, frameNum);
 
 
 		EndDrawing();

@@ -31,7 +31,7 @@ static bool showTexture = false;
 //bool textureSelected = false;
 bool textureJustClosed = false;
 int layerValue = 0;
-
+bool hideSlide = false;
 
 void ResetBoneToOriginalState(Bone* bone)
 {
@@ -173,6 +173,66 @@ int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, flo
 	return -1;
 }
 
+void mouseAnimate(Bone* bone, int time)
+{
+
+	if (bone == NULL) return;
+
+	Vector2 mousePosition = GetMousePosition();
+
+	float adjustedMouseX = (mousePosition.x - (GetScreenWidth() / 2.0f)) /
+		camera.zoom + (GetScreenWidth() / 2.0f) / camera.zoom;
+	float adjustedMouseY = (mousePosition.y - (GetScreenHeight() / 2.0f)) /
+		camera.zoom + (GetScreenHeight() / 2.0f) / camera.zoom;
+
+    Rectangle activeArea = {155,5,930,650};
+
+    activeArea.x *= camera.zoom;
+    activeArea.y *= camera.zoom;
+    activeArea.width *= camera.zoom;
+    activeArea.height *= camera.zoom;
+
+	DrawRectangleLinesEx(activeArea, 2, BLUE);
+ 
+	bool isMouseInActiveArea = CheckCollisionPointRec(mousePosition, activeArea);
+
+    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && isMouseInActiveArea)
+    {
+        if (!tempValuesSet)
+        {
+            tempLength = bone->l;
+            tempAngle = bone->a;
+            tempValuesSet = true;
+			hideSlide = true;
+        }
+
+		float dx = adjustedMouseX - bone->x;
+		float dy = adjustedMouseY - bone->y;
+
+		float newLength = sqrtf(dx * dx + dy * dy);
+		float newAngle = atan2f(dy, dx);
+
+		bone->l = newLength;
+		bone->a = newAngle;
+
+		for (int i = 0; i < bone->keyframeCount; i++)
+		{
+			if (bone->keyframe[i].time == time)
+			{
+				bone->keyframe[i].length = newLength;
+				//bone->keyframe[i].angle = angleChange;
+				break;
+
+			}
+		}
+    }
+	if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) 	
+	{
+		hideSlide = false;
+	}
+}
+
+
 void DrawOnTop(Bone* bone, int time)
 {
 
@@ -294,6 +354,32 @@ void DrawOnTop(Bone* bone, int time)
 			if (!GuiSpinner(spinnerBounds, "#95# Layer", &currentLayerValue, -5, 5, false))
 				bone->keyframe[keyframeIndex].layer = currentLayerValue;
 		}
+
+		// DropBox just below the spinner
+		float dropboxWidth = 115.0f * camera.zoom;
+		float dropboxHeight = 30.0f * camera.zoom;
+		Rectangle dropboxBounds = {
+			destRect.x - 125.0f * camera.zoom, // Misma X que la textura
+			spinnerBounds.y + spinnerBounds.height + 10.0f * camera.zoom,  // Justo debajo del spinner
+			dropboxWidth,
+			dropboxHeight
+		};
+
+		int activeOption = bone->keyframe[keyframeIndex].coll; 
+		static bool dropBoxEditMode = false;  // NO FUNCIONA BIEN
+		const char *options = "#82#Option 0;#88#Option 1;#84#Option 2;#85#Option 3";  // Box
+
+		// Dibujar el DropBox
+		if (GuiDropdownBox(dropboxBounds, options, &activeOption, dropBoxEditMode))
+		{
+			dropBoxEditMode = !dropBoxEditMode;  // Cambia el modo de edición si se hace clic
+
+			if (keyframeIndex != -1)
+			{
+					bone->keyframe[keyframeIndex].coll = activeOption;
+			}
+		}
+
 		GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
 	}
 
@@ -404,10 +490,16 @@ void DrawGUI(void)
 {
 	// Toggles
 	float z = camera.zoom;
-
+	char *animText;
 	int originalTextSize = GuiGetStyle(DEFAULT, TEXT_SIZE);
 	GuiSetStyle(DEFAULT, TEXT_SIZE, (int)(originalTextSize * z * 1.2));
-	DrawRectangleRec((Rectangle){10 * z, (SCREEN_HEIGHT - 165) * z, 140 * z, 100 * z}, WHITE);
+	DrawRectangleRec((Rectangle){10 * z, (SCREEN_HEIGHT - 195) * z, 140 * z, 130 * z}, WHITE);
+	
+	animText = animMode ? "#21#Animation" : "#100#Textures";
+
+	GuiToggle((Rectangle){20 * z, (SCREEN_HEIGHT - 190) * z, 125 * z, 30 * z},
+			animText, &animMode);
+
 	GuiToggle((Rectangle){20 * z, (SCREEN_HEIGHT - 160) * z, 125 * z, 30 * z},
 			"#152#Draw Bones", &drawBones);
 
@@ -475,7 +567,7 @@ void DrawGUI(void)
 	EndScissorMode();
 
 	// Draw the slider
-	if (!forwAnim & !revAnim) {
+	if (!forwAnim & !revAnim & !hideSlide) {
 		Rectangle sliderBounds = (Rectangle){20 * z, (SCREEN_HEIGHT - 30) * z, 
 			(SCREEN_WIDTH - 40) * z, 20 * z};
 		GuiSlider(sliderBounds, "", NULL, &frameNumFloat, 0.0f, (float)maxTime);
