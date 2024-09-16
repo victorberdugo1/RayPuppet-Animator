@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   gui.c                                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
+/*   Updated: 2024/09/16 20:59:17 by victor           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "config.h"
 #include "bones.h"
 #include "gui.h"
@@ -32,12 +44,15 @@ static bool showTexture = false;
 bool textureJustClosed = false;
 int layerValue = 0;
 bool hideSlide = false;
+	float newLength,newAngle;
+int tempKeyframeTime = -1;
+    
 
 void ResetBoneToOriginalState(Bone* bone)
 {
 	if (tempValuesSet)
 	{	
-		bone->l = tempLength;
+		bone->l = tempLength;//esto no es correcto 
 		bone->a = tempAngle;
 		tempValuesSet = false;
 	}
@@ -47,6 +62,7 @@ int UpdateBoneProperties(Bone* bone, int time)
 {
 	if (bone == NULL)
 		return 0;
+
 	int found = 0;
 	for (int i = 0; i < bone->keyframeCount; i++)
 	{
@@ -62,7 +78,12 @@ int UpdateBoneProperties(Bone* bone, int time)
 					tempValuesSet = true;
 				}
 				bone->l += 1.0f;
-				bone->keyframe[i].length += 1.0f;
+				if (direction == 1)
+					time -= 1;
+				else
+					time += 1;
+				bone->keyframe[i].length += 1.0f;//	ESTO FUNCIONA? POR QUE?
+				break;
 			}
 			if (IsKeyDown(KEY_DOWN))
 			{
@@ -73,7 +94,12 @@ int UpdateBoneProperties(Bone* bone, int time)
 					tempValuesSet = true;
 				}
 				bone->l -= 1.0f;
+				if (direction == 1)
+					time -= 1;
+				else
+					time += 1;
 				bone->keyframe[i].length -= 1.0f;
+				break;
 			}
 			if (IsKeyDown(KEY_RIGHT))
 			{
@@ -84,7 +110,12 @@ int UpdateBoneProperties(Bone* bone, int time)
 					tempValuesSet = true;
 				}
 				bone->a += 0.05f;
+				if (direction == 1)
+					time -= 1;
+				else
+					time += 1;		
 				bone->keyframe[i].angle += 0.05f;
+				break;
 			}
 			if (IsKeyDown(KEY_LEFT))
 			{
@@ -93,34 +124,32 @@ int UpdateBoneProperties(Bone* bone, int time)
 					tempLength = bone->l;
 					tempAngle = bone->a;
 					tempValuesSet = true;
-				}
+				}				
 				bone->a -= 0.05f;
+				if (direction == 1)
+					time -= 1;
+				else
+					time += 1;		
 				bone->keyframe[i].angle -= 0.05f;
+				break;
 			}
-			break;
 		}
+
 	}
 	return found;
-}            
+}
+    
 
 void HandleDirectionChange(int newDirection, int maxTime)
 {
-	int currentFrame = frameNum;
-
 	if (newDirection != direction)
 	{
 		if (direction == 1)
-			while (currentFrame <= maxTime)
-			{
-				boneAnimate(root, ++currentFrame);
-				frameNum = currentFrame;
-			}
+			while (frameNum <= maxTime)
+				boneAnimate(root, ++frameNum);
 		else
-			while (currentFrame >= 0)
-			{
-				boneAnimateReverse(root, --currentFrame);
-				frameNum = currentFrame;
-			}
+			while (frameNum >= 0)
+				boneAnimateReverse(root, --frameNum);
 		direction = newDirection;
 	}
 }
@@ -129,7 +158,6 @@ void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 {
 	int newFrame = (int)sliderValue;
 	int newDirection = (newFrame > frameNum) ? 1 : (newFrame < frameNum) ? -1 : direction;
-
 	HandleDirectionChange(newDirection, maxTime);
 	while (frameNum != newFrame)
 	{
@@ -175,64 +203,64 @@ int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, flo
 
 void mouseAnimate(Bone* bone, int time)
 {
-
 	if (bone == NULL) return;
 
 	Vector2 mousePosition = GetMousePosition();
+	Vector2 adjustedMousePosition = GetScreenToWorld2D(mousePosition, camera);
 
-	float adjustedMouseX = (mousePosition.x - (GetScreenWidth() / 2.0f)) /
-		camera.zoom + (GetScreenWidth() / 2.0f) / camera.zoom;
-	float adjustedMouseY = (mousePosition.y - (GetScreenHeight() / 2.0f)) /
-		camera.zoom + (GetScreenHeight() / 2.0f) / camera.zoom;
-
-    Rectangle activeArea = {155,5,930,650};
-
-    activeArea.x *= camera.zoom;
-    activeArea.y *= camera.zoom;
-    activeArea.width *= camera.zoom;
-    activeArea.height *= camera.zoom;
+	Rectangle activeArea = {155, 5, 930, 650};
+	activeArea.x *= camera.zoom;
+	activeArea.y *= camera.zoom;
+	activeArea.width *= camera.zoom;
+	activeArea.height *= camera.zoom;
 
 	DrawRectangleLinesEx(activeArea, 2, BLUE);
- 
 	bool isMouseInActiveArea = CheckCollisionPointRec(mousePosition, activeArea);
 
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && isMouseInActiveArea)
-    {
-        if (!tempValuesSet)
-        {
-            tempLength = bone->l;
-            tempAngle = bone->a;
-            tempValuesSet = true;
-			hideSlide = true;
-        }
+	// Comprobar si estamos dentro de un keyframe
+	for (int i = 0; i < bone->keyframeCount; i++)
+	{
+		if (bone->keyframe[i].time == time)
+		{
+			if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && isMouseInActiveArea)
+			{
+				if (!tempValuesSet)
+				{
+					//tempLength = bone->l;//esto no es correcto
+					//tempAngle = bone->a;
+					tempValuesSet = true;
+					tempKeyframeTime = time;
+				}
+				float dx = adjustedMousePosition.x - bone->x;
+				float dy = adjustedMousePosition.y - bone->y;
+				newLength = sqrtf(dx * dx + dy * dy);
+				newAngle = atan2f(dy, dx);
 
-		float dx = adjustedMouseX - bone->x;
-		float dy = adjustedMouseY - bone->y;
+				bone->l = newLength;
+				bone->a = newAngle;
+			}
 
-		float newLength = sqrtf(dx * dx + dy * dy);
-		float newAngle = atan2f(dy, dx);
-
-		bone->l = newLength;
-		bone->a = newAngle;
-
+		}
+	}
+	if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && tempValuesSet)
+	{
 		for (int i = 0; i < bone->keyframeCount; i++)
 		{
-			if (bone->keyframe[i].time == time)
+			if (bone->keyframe[i].time == tempKeyframeTime)
 			{
-				bone->keyframe[i].length = newLength;
-				//bone->keyframe[i].angle = angleChange;
-				break;
-
+				bone->keyframe[i].length = newLength - tempLength;
+				bone->keyframe[i].angle = newAngle - tempAngle;
+				//ResetBoneToOriginalState(currentBone);  
+				printf("Keyframe updated: length = %f, angle = %f\n", bone->keyframe[i].length, bone->keyframe[i].angle);
+				printf("Updated bone->l: %f, bone->a: %f\n", bone->l, bone->a);
+				break;  			
 			}
 		}
-    }
-	if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) 	
-	{
-		hideSlide = false;
+		tempKeyframeTime = -1;
 	}
 }
 
-
+	
 void DrawOnTop(Bone* bone, int time)
 {
 
@@ -367,7 +395,7 @@ void DrawOnTop(Bone* bone, int time)
 
 		int activeOption = bone->keyframe[keyframeIndex].coll; 
 		static bool dropBoxEditMode = false;  // NO FUNCIONA BIEN
-		const char *options = "#82#Option 0;#88#Option 1;#84#Option 2;#85#Option 3";  // Box
+		const char *options = "#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3";  // Box
 
 		// Dibujar el DropBox
 		if (GuiDropdownBox(dropboxBounds, options, &activeOption, dropBoxEditMode))
@@ -406,14 +434,13 @@ void UpdateGUI(void)
 
 	if (IsKeyPressed(KEY_P))
 	{
-		if (tempValuesSet)
-			ResetBoneToOriginalState(currentBone);
 		HandleDirectionChange(1, maxTime);
 		frameNumFloat++;
 		if (frameNumFloat > maxTime)
 			frameNumFloat = 0;
 		UpdateAnimationWithSlider(frameNumFloat, maxTime);
-
+		if (tempValuesSet)
+			ResetBoneToOriginalState(currentBone);
 	}
 	else if (IsKeyPressed(KEY_O))
 	{
@@ -574,6 +601,7 @@ void DrawGUI(void)
 
 		if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) &&
 				CheckCollisionPointRec(GetMousePosition(), sliderBounds)) {
+			//animMode = false; //buscar alternativa
 			if (tempValuesSet) 
 				ResetBoneToOriginalState(currentBone);    
 		}
@@ -582,7 +610,6 @@ void DrawGUI(void)
 		for (int i = 0; i <= maxTime; i++) {
 			float posX = sliderBounds.x + (i * ((sliderBounds.width - 20 * z) / (float)maxTime));
 			Color textColor = isKeyframe[i] ? GREEN : WHITE;
-
 			DrawText(TextFormat("%d", i), posX, sliderBounds.y - 25 * z, 15 * z, textColor);
 		}
 	}
