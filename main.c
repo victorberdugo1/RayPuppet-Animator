@@ -47,7 +47,7 @@ int main(void)
 
     animationLoadKeyframes("Bbs_SkelAnim.txt", root);
 
-    frameNum = 0;
+    frameNum = 1;
 	
 	InitializeGUI();
 
