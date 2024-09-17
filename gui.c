@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/16 20:59:17 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/17 16:51:48 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ bool textureJustClosed = false;
 int layerValue = 0;
 bool hideSlide = false;
 	float newLength,newAngle;
-int tempKeyframeTime = -1;
+int keyframeIndex = -1;
     
 
 void ResetBoneToOriginalState(Bone* bone)
@@ -60,85 +60,52 @@ void ResetBoneToOriginalState(Bone* bone)
 
 int UpdateBoneProperties(Bone* bone, int time)
 {
-	if (bone == NULL)
-		return 0;
+	if (!bone)
+		return (0);
 
-	int found = 0;
+    for (int i = 0; i < bone->keyframeCount; i++)
+    {
+        if (bone->keyframe[i].time == time)
+        {
+            keyframeIndex = i;
+            break;
+        }
+    }
 	for (int i = 0; i < bone->keyframeCount; i++)
 	{
-		if (bone->keyframe[i].time == time)
+		if (bone->keyframe[i].time != time)
+			continue;
+		if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN))
 		{
-			found = 1;
-			if (IsKeyDown(KEY_UP))
+			if (!tempValuesSet)
 			{
-				if (!tempValuesSet)
-				{
-					tempLength = bone->l;
-					tempAngle = bone->a;
-					tempValuesSet = true;
-				}
-				bone->l += 1.0f;
-				if (direction == 1)
-					time -= 1;
-				else
-					time += 1;
-				bone->keyframe[i].length += 1.0f;//	ESTO FUNCIONA? POR QUE?
-				break;
+				tempLength = bone->l;
+				tempAngle = bone->a;
+				tempValuesSet = true;
 			}
-			if (IsKeyDown(KEY_DOWN))
+			float delta = IsKeyDown(KEY_UP) ? 1.0f : -1.0f;
+			bone->l += delta;
+			time += (direction == 1) ? -1 : 1;
+			bone->keyframe[keyframeIndex].length += delta;
+		}
+		else if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT))
+		{
+			if (!tempValuesSet)
 			{
-				if (!tempValuesSet)
-				{
-					tempLength = bone->l;
-					tempAngle = bone->a;
-					tempValuesSet = true;
-				}
-				bone->l -= 1.0f;
-				if (direction == 1)
-					time -= 1;
-				else
-					time += 1;
-				bone->keyframe[i].length -= 1.0f;
-				break;
+				tempLength = bone->l;
+				tempAngle = bone->a;
+				tempValuesSet = true;
 			}
-			if (IsKeyDown(KEY_RIGHT))
-			{
-				if (!tempValuesSet)
-				{
-					tempLength = bone->l;
-					tempAngle = bone->a;
-					tempValuesSet = true;
-				}
-				bone->a += 0.05f;
-				if (direction == 1)
-					time -= 1;
-				else
-					time += 1;		
-				bone->keyframe[i].angle += 0.05f;
-				break;
-			}
-			if (IsKeyDown(KEY_LEFT))
-			{
-				if (!tempValuesSet)
-				{
-					tempLength = bone->l;
-					tempAngle = bone->a;
-					tempValuesSet = true;
-				}				
-				bone->a -= 0.05f;
-				if (direction == 1)
-					time -= 1;
-				else
-					time += 1;		
-				bone->keyframe[i].angle -= 0.05f;
-				break;
-			}
+			float delta = IsKeyDown(KEY_RIGHT) ? 0.05f : -0.05f;
+			bone->a += delta;
+			time += (direction == 1) ? -1 : 1;
+			bone->keyframe[keyframeIndex].angle += delta;
 		}
 
+		return 1;
 	}
-	return found;
+    return 0;
 }
-    
 
 void HandleDirectionChange(int newDirection, int maxTime)
 {
@@ -224,12 +191,14 @@ void mouseAnimate(Bone* bone, int time)
 		{
 			if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && isMouseInActiveArea)
 			{
+				hideSlide = true;
+
+				time += (direction == 1) ? -1 : 1;
 				if (!tempValuesSet)
 				{
-					//tempLength = bone->l;//esto no es correcto
-					//tempAngle = bone->a;
+					tempLength = bone->l;
+					tempAngle = bone->a;
 					tempValuesSet = true;
-					tempKeyframeTime = time;
 				}
 				float dx = adjustedMousePosition.x - bone->x;
 				float dy = adjustedMousePosition.y - bone->y;
@@ -238,28 +207,16 @@ void mouseAnimate(Bone* bone, int time)
 
 				bone->l = newLength;
 				bone->a = newAngle;
-			}
-
-		}
-	}
-	if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && tempValuesSet)
-	{
-		for (int i = 0; i < bone->keyframeCount; i++)
-		{
-			if (bone->keyframe[i].time == tempKeyframeTime)
-			{
 				bone->keyframe[i].length = newLength - tempLength;
 				bone->keyframe[i].angle = newAngle - tempAngle;
-				//ResetBoneToOriginalState(currentBone);  
-				printf("Keyframe updated: length = %f, angle = %f\n", bone->keyframe[i].length, bone->keyframe[i].angle);
-				printf("Updated bone->l: %f, bone->a: %f\n", bone->l, bone->a);
-				break;  			
 			}
 		}
-		tempKeyframeTime = -1;
+	}
+	if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
+	{
+		hideSlide = false;
 	}
 }
-
 	
 void DrawOnTop(Bone* bone, int time)
 {
@@ -269,9 +226,7 @@ void DrawOnTop(Bone* bone, int time)
 	if (textureJustClosed)
 	{
 		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) // Esperar a que se suelte el clic
-		{
 			textureJustClosed = false; // Permitir clics en los huesos de nuevo
-		}
 		return; // Bloquear clics hasta que se libere el botón
 	}
 
@@ -348,7 +303,6 @@ void DrawOnTop(Bone* bone, int time)
                         float highlightY = destRect.y + (partexY * partHeight * camera.zoom);
                         float highlightWidth = partWidth * camera.zoom;
                         float highlightHeight = partHeight * camera.zoom;
-
 						// Marca la textura con un recuadro verde si coincide
 						DrawRectangleLinesEx((Rectangle){highlightX, highlightY, 
 								highlightWidth, highlightHeight}, 4, GREEN);
@@ -464,7 +418,6 @@ void UpdateGUI(void)
 		if (tempValuesSet)
 			ResetBoneToOriginalState(currentBone);
 	}
-
 	if (revAnim)
 	{  
 		HandleDirectionChange(-1, maxTime);
@@ -569,7 +522,14 @@ void DrawGUI(void)
 
 		if (GuiButton(buttonRect, bones[i]->name)) {
 			if (tempValuesSet)
-				ResetBoneToOriginalState(currentBone);
+			{
+				HandleDirectionChange(1, maxTime);
+				frameNumFloat++;
+				if (frameNumFloat > maxTime)
+					frameNumFloat = 0;
+				UpdateAnimationWithSlider(frameNumFloat, maxTime);
+				ResetBoneToOriginalState(currentBone); 
+			}
 			selectedBone = i;
 			currentBone = bones[selectedBone];
 			memset(isKeyframe, 0, sizeof(isKeyframe));
@@ -578,16 +538,17 @@ void DrawGUI(void)
 					if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
 						isKeyframe[currentBone->keyframe[j].time] = true;
 			// Si se obtiene un índice válido, actualizar la textura seleccionada
-			if (showTexture) {
+			if (showTexture)
+			{
 				int textureCount = 0; 
 				for (int j = 0; j <= selectedBone; j++)
 					if (bones[j] != NULL && bones[j]->keyframe[0].partex > -1)
 						textureCount++;
 				selectedTexture = textures[textureCount];
-				showTexture = true;  // Mostrar la textura
+				showTexture = true;
 			}
 			else
-				showTexture = false; // No hay textura para mostrar
+				showTexture = false;
 		}
 		visibleButtonIndex++;
 	}
@@ -603,7 +564,15 @@ void DrawGUI(void)
 				CheckCollisionPointRec(GetMousePosition(), sliderBounds)) {
 			//animMode = false; //buscar alternativa
 			if (tempValuesSet) 
-				ResetBoneToOriginalState(currentBone);    
+			{
+				frameNumFloat += (direction == 1) ? -1.0f : 1.0f;
+				if (frameNumFloat > maxTime)
+					frameNumFloat = 0;
+				UpdateAnimationWithSlider(frameNumFloat, maxTime);
+				ResetBoneToOriginalState(currentBone); 
+				GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
+				return;
+			}
 		}
 		UpdateAnimationWithSlider(frameNumFloat, maxTime);
 		frameNumFloat = (int)(frameNumFloat + 0.5f);

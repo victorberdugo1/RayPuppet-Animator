@@ -61,17 +61,14 @@ int main(void)
 		float zoomX = (float)windowWidth / (float)SCREEN_WIDTH;
         float zoomY = (float)windowHeight / (float)SCREEN_HEIGHT;
         camera.zoom = (zoomX < zoomY) ? zoomX : zoomY; // Mantener la relación de aspecto
+		
 
-        keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
-		
-		UpdateGUI();
-		
 		BeginDrawing();
-
 		ClearBackground(GRAY);		
-
-
+		
 		DrawGUI();
+		keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
+		UpdateGUI();
 
 		BeginMode2D(camera);
 		meshDraw(&body, root, frameNum);
