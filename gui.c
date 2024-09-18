@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/17 23:06:19 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/18 22:25:10 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,6 +134,7 @@ int UpdateBoneProperties(Bone* bone, int time)
 
 bool HandleDirectionChange(int newDirection, int maxTime)
 {
+
 	if (newDirection != direction)
 	{
 		if (direction == 1)
@@ -143,6 +144,7 @@ bool HandleDirectionChange(int newDirection, int maxTime)
 			while (frameNum >= 0)
 				boneAnimateReverse(root, --frameNum);
 		direction = newDirection;
+		printf("direction %d \n", direction);
 		return true;
 	}
 	return false;
@@ -412,24 +414,30 @@ void DrawOnTop(Bone* bone, int time)
 
 void UpdateGUI(void)
 {
-
+//aun no funciona
 	if (IsKeyPressed(KEY_P))
 	{
 		HandleDirectionChange(1, maxTime);
-		frameNumFloat++;
-		if (frameNumFloat > maxTime)
-			frameNumFloat = 0;
-		UpdateAnimationWithSlider(frameNumFloat, maxTime);
+		if (tempValuesSet)
+			HandleDirectionChange(-1, maxTime);
+		frameNum++;
+		if (frameNum > maxTime)
+			frameNum = 0;
+		boneAnimate(root, frameNum);
+		frameNumFloat = frameNum;
 		if (tempValuesSet)
 			ResetBoneToOriginalState(currentBone);
 	}
 	if (IsKeyPressed(KEY_O))
 	{
 		HandleDirectionChange(-1, maxTime);
-			frameNumFloat--;
-		if (frameNumFloat < 0)
-			frameNumFloat = maxTime;
-		UpdateAnimationWithSlider(frameNumFloat, maxTime);
+		if (tempValuesSet)
+			HandleDirectionChange(1, maxTime);
+		frameNum--;
+		if (frameNum < 0)
+			frameNum = maxTime;
+		boneAnimateReverse(root, frameNum);
+		frameNumFloat = frameNum;
 		if (tempValuesSet)
 			ResetBoneToOriginalState(currentBone);
 	}
@@ -437,8 +445,10 @@ void UpdateGUI(void)
 	if (forwAnim)
 	{  
 		HandleDirectionChange(1, maxTime);
+		if (tempValuesSet)
+			HandleDirectionChange(-1, maxTime);
 		frameNum++;
-		if (frameNum >= maxTime)
+		if (frameNum > maxTime)
 			frameNum = 0;
 		boneAnimate(root, frameNum);
 		frameNumFloat = frameNum;
@@ -448,6 +458,8 @@ void UpdateGUI(void)
 	if (revAnim)
 	{  
 		HandleDirectionChange(-1, maxTime);
+		if (tempValuesSet)
+			HandleDirectionChange(1, maxTime);
 		frameNum--;
 		if (frameNum < 0)
 			frameNum = maxTime;
@@ -456,6 +468,8 @@ void UpdateGUI(void)
 		if (tempValuesSet)
 			ResetBoneToOriginalState(currentBone);
 	}
+	
+printf("Animation step | Direction: %d | Time: %.2f \n", direction, frameNumFloat );
 }
 
 static void LoadBonesBoxRecursive(Bone* bone, Bone* bones[], int* index, int* count)
@@ -592,17 +606,14 @@ void DrawGUI(void)
 			//animMode = false; //buscar alternativa
 			if (tempValuesSet) 
 			{
-				frameNumFloat += (direction == 1) ? -1.0f : 1.0f;
-				if (frameNumFloat > maxTime)
-					frameNumFloat = 0;
-				UpdateAnimationWithSlider(frameNumFloat, maxTime);
+				UpdateAnimationWithSlider(0, maxTime);
 				ResetBoneToOriginalState(currentBone); 
 				GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
 				return;
 			}
 		}
 		UpdateAnimationWithSlider(frameNumFloat, maxTime);
-		frameNumFloat = (int)(frameNumFloat + 0.5f);
+		frameNumFloat = (int)(frameNumFloat);
 		for (int i = 0; i <= maxTime; i++) {
 			float posX = sliderBounds.x + (i * ((sliderBounds.width - 20 * z) / (float)maxTime));
 			Color textColor = isKeyframe[i] ? GREEN : WHITE;
