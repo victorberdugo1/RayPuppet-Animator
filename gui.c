@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/19 23:04:51 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/19 23:41:23 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,68 +57,6 @@ void ResetBoneToOriginalState(Bone* bone)
 	}
 }
 
-int UpdateBoneProperties(Bone* bone, int time)
-{
-	if (!bone)
-		return (0);
-
-    for (int i = 0; i < bone->keyframeCount; i++)
-    {
-        if (bone->keyframe[i].time == time)
-        {
-            keyframeIndex = i;
-            break;
-        }
-    }
-	for (int i = 0; i < bone->keyframeCount; i++)
-	{
-		if (bone->keyframe[i].time != time)
-			continue;
-		if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN))
-		{
-			if (!tempValuesSet)
-			{
-				float currentLength = bone->l;
-				float currentAngle = bone->a;
-				for (int i = bone->keyframeCount; i >= 0; --i)
-				{
-					currentLength -= bone->keyframe[i].length;
-					currentAngle -= bone->keyframe[i].angle;
-				}
-				tempLength = currentLength;
-				tempAngle = currentAngle;
-				tempValuesSet = true;
-			}
-			float delta = IsKeyDown(KEY_UP) ? 1.0f : -1.0f;
-			bone->l += delta;
-			time += (direction == 1) ? 1 : -1;
-			bone->keyframe[keyframeIndex].length = bone->l - tempLength;
-		}
-		else if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT))
-		{
-			if (!tempValuesSet)
-			{
-				float currentLength = bone->l;
-				float currentAngle = bone->a;
-				for (int i = keyframeIndex; i > 0; --i)
-				{
-					currentLength -= bone->keyframe[i].length;
-					currentAngle -= bone->keyframe[i].angle;
-				}
-				tempLength = bone->keyframe[0].length + currentLength;
-				tempAngle = bone->keyframe[0].angle + currentAngle;
-				tempValuesSet = true;
-			}
-			float delta = IsKeyDown(KEY_RIGHT) ? 0.05f : -0.05f;
-			bone->a += delta;
-			time += (direction == 1) ? 1 : -1;	
-			bone->keyframe[keyframeIndex].angle = bone->a - tempAngle;
-		}
-		return 1;
-	}
-	return 0;
-}
-
 bool HandleDirectionChange(int newDirection, int maxTime)
 {
 
@@ -149,6 +87,59 @@ void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 		else
 			boneAnimateReverse(root, --frameNum);
 	}
+}
+
+int UpdateBoneProperties(Bone* bone, int time)
+{
+	if (!bone)
+		return (0);
+
+    for (int i = 0; i < bone->keyframeCount; i++)
+    {
+        if (bone->keyframe[i].time == time)
+        {
+            keyframeIndex = i;
+            break;
+        }
+    }
+	for (int i = 0; i < bone->keyframeCount; i++)
+	{
+		if (bone->keyframe[i].time != time)
+			continue;
+		if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN))
+		{
+			float delta = IsKeyDown(KEY_UP) ? 1.0f : -1.0f;
+			bone->l += delta;
+			time += (direction == 1) ? 1 : -1;
+			if (!tempValuesSet)
+			{
+				UpdateAnimationWithSlider(0, maxTime);
+				tempLength = bone->l;
+				tempAngle = bone->a;
+				tempValuesSet = true;
+				UpdateAnimationWithSlider(time, maxTime);
+			}
+			bone->keyframe[keyframeIndex].length = bone->l - tempLength;
+		}
+		else if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT))
+		{
+
+			float delta = IsKeyDown(KEY_RIGHT) ? 0.05f : -0.05f;
+			bone->a += delta;
+			time += (direction == 1) ? 1 : -1;	
+			if (!tempValuesSet)
+			{
+				UpdateAnimationWithSlider(0, maxTime);
+				tempLength = bone->l;
+				tempAngle = bone->a;
+				tempValuesSet = true;
+				UpdateAnimationWithSlider(time, maxTime);
+			}
+			bone->keyframe[keyframeIndex].angle = bone->a - tempAngle;
+		}
+		return 1;
+	}
+	return 0;
 }
 
 int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, float zoom)
@@ -212,16 +203,11 @@ void mouseAnimate(Bone* bone, int time)
 				time += (direction == -1) ? 1 : -1;
 				if (!tempValuesSet)
 				{
-				float currentLength = bone->l;
-				float currentAngle = bone->a;
-				for (int i = bone->keyframeCount; i >= 0; --i)
-				{
-					currentLength -= bone->keyframe[i].length;
-					currentAngle -= bone->keyframe[i].angle;
-				}
-				tempLength = currentLength;
-				tempAngle = currentAngle;
-				tempValuesSet = true;
+					UpdateAnimationWithSlider(0, maxTime);
+					tempLength = bone->l;
+					tempAngle = bone->a;
+					tempValuesSet = true;
+					UpdateAnimationWithSlider(time, maxTime);
 				}
 				float dx = adjustedMousePosition.x - bone->x;
 				float dy = adjustedMousePosition.y - bone->y;
