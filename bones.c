@@ -208,7 +208,7 @@ int boneAnimate(Bone *root, int time)
 		return (0);
 	for (int kfIdx = 0; kfIdx < root->keyframeCount; kfIdx++)
 	{
-		if (root->keyframe[kfIdx].time <= time && time < root->keyframe[kfIdx + 1].time)
+		if (root->keyframe[kfIdx].time < time && time <= root->keyframe[kfIdx + 1].time)
 		//if (root->keyframe[kfIdx].time == time)
 		{
 			if (kfIdx < root->keyframeCount - 1)
@@ -252,7 +252,7 @@ int boneAnimateReverse(Bone *root, int time)
 
 	for (int kfIdx = root->keyframeCount - 1; kfIdx >= 0; kfIdx--)
 	{
-		if (root->keyframe[kfIdx].time >= time && time > root->keyframe[kfIdx - 1].time)
+		if (root->keyframe[kfIdx].time > time && time >= root->keyframe[kfIdx - 1].time)
 		//if (root->keyframe[kfIdx].time == time)
 		{
 			if (kfIdx > 0)
