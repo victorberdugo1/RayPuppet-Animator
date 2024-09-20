@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/20 19:39:40 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/20 22:44:03 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,110 +51,8 @@ int keyframeIndex = -1;
 #include <string.h>
 #include <unistd.h>
 
-char* SelectFile() {
-    static char fileName[128];
-    char command[256];
-
-    snprintf(command, sizeof(command), "zenity --file-selection --title=\"Seleccionar archivo de animación\"");
-
-    FILE *fp = popen(command, "r");
-    if (fp == NULL) {
-        return NULL;
-    }
-
-    fgets(fileName, sizeof(fileName), fp);
-    fileName[strcspn(fileName, "\n")] = 0;
-
-    pclose(fp);
-
-    if (strlen(fileName) == 0) {
-        return NULL;
-    }
-
-    return fileName;
-}
-
-Bone* CleanAndLoadAnimation(Bone *root)
-{
-    if (!root) {
-        return NULL;
-    }
-
-    char *filePath = SelectFile();
-    if (!filePath) {
-        return NULL;
-    }
-
-    boneCleanAnimation(root, filePath);
-
-    animationLoadKeyframes(filePath, root);
-
-    return root;
-}
-
-void SaveBoneAnimationToFile(Bone *root) 
-{
-    char fileName[128] = "default.txt";  // Nombre del archivo por defecto
-    char command[256];
-
-    // Creamos el comando para Zenity con un nombre de archivo por defecto
-    snprintf(command, sizeof(command), "zenity --file-selection --save --confirm-overwrite --filename=%s", fileName);
-
-    FILE *fp = popen(command, "r");
-    if (fp == NULL) {
-        printf("No se pudo abrir el diálogo\n");
-        return;
-    }
-
-    // Obtenemos el nombre del archivo que el usuario selecciona
-    fgets(fileName, sizeof(fileName), fp);
-    fileName[strcspn(fileName, "\n")] = 0;  // Eliminamos el salto de línea final
-
-    pclose(fp);
-
-    // Verificamos si el usuario seleccionó un archivo
-    if (strlen(fileName) == 0) {
-        printf("No se seleccionó ningún archivo.\n");
-        return;
-    }
-
-    FILE *file = fopen(fileName, "w");
-    if (!file) {
-        printf("Error al abrir el archivo: %s\n", fileName);
-        return;
-    }
-
-    // Guardamos el stdout original para restaurarlo después
-    int originalStdout = dup(STDOUT_FILENO);
-    // Redirigimos stdout al archivo
-    dup2(fileno(file), STDOUT_FILENO);
-
-    // Llamamos a la función original para que escriba en el archivo
-    boneDumpAnim(root, 0);
-
-    // Restauramos stdout
-    fflush(stdout);
-    dup2(originalStdout, STDOUT_FILENO);
-    close(originalStdout);
-
-    fclose(file);
-    printf("Animación guardada en: %s\n", fileName);
-}
-
- 
-void ResetBoneToOriginalState(Bone* bone)
-{
-	if (tempValuesSet)
-	{	
-		bone->l = tempLength;//esto no es correcto 
-		bone->a = tempAngle;
-		tempValuesSet = false;
-	}
-}
-
 bool HandleDirectionChange(int newDirection, int maxTime)
 {
-
 	if (newDirection != direction)
 	{
 		if (direction == 1)
@@ -164,7 +62,6 @@ bool HandleDirectionChange(int newDirection, int maxTime)
 			while (frameNum >= 0)
 				boneAnimateReverse(root, --frameNum);
 		direction = newDirection;
-		printf("direction %d \n", direction);
 		return true;
 	}
 	return false;
@@ -184,11 +81,81 @@ void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 	}
 }
 
+char* SelectFile(void)
+{
+    static char	fileName[128];
+    char		command[256];
+
+    snprintf(command, sizeof(command), "zenity --file-selection --title=\"Select Animation File\"");
+    FILE *fp = popen(command, "r");
+    if (fp == NULL)
+		return NULL;
+    fgets(fileName, sizeof(fileName), fp);
+    fileName[strcspn(fileName, "\n")] = 0;
+    pclose(fp);
+    if (strlen(fileName) == 0)
+        return NULL;
+    return fileName;
+}
+
+Bone* CleanAndLoadAnimation(Bone *root)
+{
+	if (!root)
+		return NULL;
+while (frameNum >= 0)
+				boneAnimateReverse(root, --frameNum);
+
+	char *filePath = SelectFile();
+	if (!filePath)
+        return NULL;
+    boneCleanAnimation(root, filePath);
+    animationLoadKeyframes(filePath, root);
+    return root;
+}
+
+void SaveBoneAnimationToFile(Bone *root) 
+{
+    char fileName[128] = "default.txt";
+	char command[256];
+
+    // Creamos el comando con un nombre de archivo por defecto
+    snprintf(command, sizeof(command),
+			"zenity --file-selection --save --confirm-overwrite --filename=%s", fileName);
+    FILE *fp = popen(command, "r");
+    if (fp == NULL)
+		return;
+    fgets(fileName, sizeof(fileName), fp);
+    fileName[strcspn(fileName, "\n")] = 0;
+    pclose(fp);
+    if (strlen(fileName) == 0)
+		return;
+    FILE *file = fopen(fileName, "w");
+    if (!file)
+        return;
+    int originalStdout = dup(STDOUT_FILENO);
+    dup2(fileno(file), STDOUT_FILENO);
+    boneDumpAnim(root, 0);
+    fflush(stdout);
+    dup2(originalStdout, STDOUT_FILENO);
+    close(originalStdout);
+    fclose(file);
+    printf("Animación guardada en: %s\n", fileName);
+}
+
+void ResetBoneToOriginalState(Bone* bone)
+{
+	if (tempValuesSet)
+	{
+		bone->l = tempLength;
+		bone->a = tempAngle;
+		tempValuesSet = false;
+	}
+}
+
 int UpdateBoneProperties(Bone* bone, int time)
 {
 	if (!bone)
 		return (0);
-
     for (int i = 0; i < bone->keyframeCount; i++)
     {
         if (bone->keyframe[i].time == time)
@@ -218,7 +185,6 @@ int UpdateBoneProperties(Bone* bone, int time)
 		}
 		else if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT))
 		{
-
 			float delta = IsKeyDown(KEY_RIGHT) ? 0.05f : -0.05f;
 			bone->a += delta;
 			time += (direction == 1) ? 1 : -1;	
@@ -240,24 +206,20 @@ int UpdateBoneProperties(Bone* bone, int time)
 int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, float zoom)
 {
 	int textureCount = 0;
-
 	for (int i = 0; i < boneCount; i++)
 	{
 		if (bones[i]->keyframe[0].partex == -1)
 			continue;
-
 		float destWidth = 100.0f * zoom;
 		float destHeight = 100.0f * zoom;
 		float centerX = bones[i]->x * zoom;
 		float centerY = bones[i]->y * zoom;
-
 		if (clickPosition.x >= (centerX - destWidth / 2) &&
 				clickPosition.x <= (centerX + destWidth / 2) &&
 				clickPosition.y >= (centerY - destHeight / 2) &&
 				clickPosition.y <= (centerY + destHeight / 2))
 		{
 			int selectedBoneIndex = i;
-
 			for (int j = 0; j <= selectedBoneIndex; j++)
 			{
 				if (bones[j]->keyframe[0].partex > -1)
@@ -272,7 +234,8 @@ int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, flo
 
 void mouseAnimate(Bone* bone, int time)
 {
-	if (bone == NULL) return;
+	if (bone == NULL)
+		return;
 
 	Vector2 mousePosition = GetMousePosition();
 	Vector2 adjustedMousePosition = GetScreenToWorld2D(mousePosition, camera);
@@ -285,8 +248,6 @@ void mouseAnimate(Bone* bone, int time)
 
 	DrawRectangleLinesEx(activeArea, 2, BLUE);
 	bool isMouseInActiveArea = CheckCollisionPointRec(mousePosition, activeArea);
-
-	// Comprobar si estamos dentro de un keyframe
 	for (int i = 0; i < bone->keyframeCount; i++)
 	{
 		if (bone->keyframe[i].time == time)
@@ -294,8 +255,6 @@ void mouseAnimate(Bone* bone, int time)
 			if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && isMouseInActiveArea)
 			{
 				hideSlide = true;
-
-				time += (direction == -1) ? 1 : -1;
 				if (!tempValuesSet)
 				{
 					UpdateAnimationWithSlider(0, maxTime);
@@ -304,11 +263,11 @@ void mouseAnimate(Bone* bone, int time)
 					tempValuesSet = true;
 					UpdateAnimationWithSlider(time, maxTime);
 				}
+				time += (direction == -1) ? 1 : -1;
 				float dx = adjustedMousePosition.x - bone->x;
 				float dy = adjustedMousePosition.y - bone->y;
 				newLength = sqrtf(dx * dx + dy * dy);
 				newAngle = atan2f(dy, dx);
-
 				bone->l = newLength;
 				bone->a = newAngle;
 				bone->keyframe[i].length = newLength - tempLength;
@@ -324,65 +283,58 @@ void mouseAnimate(Bone* bone, int time)
 	
 void DrawOnTop(Bone* bone, int time)
 {
+	Vector2	mousePosition;
 
-	Vector2 mousePosition = GetMousePosition();
-
+	mousePosition = GetMousePosition();
 	if (textureJustClosed)
 	{
-		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) // Esperar a que se suelte el clic
-			textureJustClosed = false; // Permitir clics en los huesos de nuevo
-		return; // Bloquear clics hasta que se libere el botón
+		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
+			textureJustClosed = false;
+		return;
 	}
-
+	//Texturas
     if (showTexture && selectedTexture.id != 0)
     {
-		int gridSize = contTxt; 
-		float partWidth = (float)selectedTexture.width / gridSize;
-		float partHeight = (float)selectedTexture.height / gridSize;
+		int			gridSize = contTxt; 
+		float		partWidth = (float)selectedTexture.width / gridSize;
+		float		partHeight = (float)selectedTexture.height / gridSize;
 
-		Rectangle destRect = {
+		Rectangle	destRect = {
 			(GetScreenWidth() - (selectedTexture.width * camera.zoom)) / 2.0f,
 			(GetScreenHeight() - (selectedTexture.height * camera.zoom)) / 2.0f,
 			(float)selectedTexture.width * camera.zoom,
 			(float)selectedTexture.height * camera.zoom
 		};
 
-		Rectangle sourceRect = { 0, 0, (float)selectedTexture.width, (float)selectedTexture.height };
-		Vector2 origin = { 0, 0 };
+		Rectangle	sourceRect = { 0, 0, (float)selectedTexture.width, (float)selectedTexture.height };
+		Vector2		origin = { 0, 0 };
 		DrawTexturePro(selectedTexture, sourceRect, destRect, origin, 0.0f, WHITE);
 
 		if (CheckCollisionPointRec(mousePosition, destRect))
 		{
-			float relativeMouseX = (mousePosition.x - destRect.x) / camera.zoom;
-			float relativeMouseY = (mousePosition.y - destRect.y) / camera.zoom;
+			float	relativeMouseX = (mousePosition.x - destRect.x) / camera.zoom;
+			float	relativeMouseY = (mousePosition.y - destRect.y) / camera.zoom;
 
-			int gridX = (int)(relativeMouseX / partWidth);
-			int gridY = (int)(relativeMouseY / partHeight);
+			int		gridX = (int)(relativeMouseX / partWidth);
+			int		gridY = (int)(relativeMouseY / partHeight);
 
-			float highlightX = destRect.x + (gridX * partWidth * camera.zoom);
-			float highlightY = destRect.y + (gridY * partHeight * camera.zoom);
-			float highlightWidth = partWidth * camera.zoom;
-			float highlightHeight = partHeight * camera.zoom;
+			float	highlightX = destRect.x + (gridX * partWidth * camera.zoom);
+			float	highlightY = destRect.y + (gridY * partHeight * camera.zoom);
+			float	highlightWidth = partWidth * camera.zoom;
+			float	highlightHeight = partHeight * camera.zoom;
 
 			DrawRectangle(highlightX, highlightY, highlightWidth, highlightHeight, Fade(RED, 0.5f));
 
 			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-			{
 				for (int i = 0; i < bone->keyframeCount; i++)
-				{
 					if (bone->keyframe[i].time == time)
 					{
 						bone->keyframe[i].partex = gridX + gridY * gridSize;
 						showTexture = false;
 						textureJustClosed = true;
-
 					}
-				}
-			}
 		}
-
 		for (int y = 0; y < gridSize; y++)
-		{
 			for (int x = 0; x < gridSize; x++)
 			{
 				float rectX = destRect.x + (x * partWidth * camera.zoom);
@@ -390,9 +342,7 @@ void DrawOnTop(Bone* bone, int time)
 
 				DrawRectangleLines(rectX, rectY, partWidth * camera.zoom, partHeight * camera.zoom, RED);
 			}
-		}
 		if (currentBone != NULL)
-        {
             for (int i = 0; i < bone->keyframeCount; i++)
             {
                 if (bone->keyframe[i].time == time)
@@ -402,19 +352,16 @@ void DrawOnTop(Bone* bone, int time)
                     {
                         int partexX = partexIndex % gridSize;
                         int partexY = partexIndex / gridSize;
-
                         float highlightX = destRect.x + (partexX * partWidth * camera.zoom);
                         float highlightY = destRect.y + (partexY * partHeight * camera.zoom);
                         float highlightWidth = partWidth * camera.zoom;
                         float highlightHeight = partHeight * camera.zoom;
-						// Marca la textura con un recuadro verde si coincide
 						DrawRectangleLinesEx((Rectangle){highlightX, highlightY, 
 								highlightWidth, highlightHeight}, 4, GREEN);
 
 					}
                 }
             }
-        }
 		//GuiSpinner for Layer
 		int originalTextSize = GuiGetStyle(DEFAULT, TEXT_SIZE);
 		GuiSetStyle(DEFAULT, RAYGUI_ICON_SIZE, 200);
@@ -440,38 +387,30 @@ void DrawOnTop(Bone* bone, int time)
 			if (!GuiSpinner(spinnerBounds, "#95# Layer", &currentLayerValue, -5, 5, false))
 				bone->keyframe[keyframeIndex].layer = currentLayerValue;
 		}
-
-		// DropBox just below the spinner
+		// DropBox
 		float dropboxWidth = 115.0f * camera.zoom;
 		float dropboxHeight = 30.0f * camera.zoom;
 		Rectangle dropboxBounds = {
-			destRect.x - 125.0f * camera.zoom, // Misma X que la textura
-			spinnerBounds.y + spinnerBounds.height + 10.0f * camera.zoom,  // Justo debajo del spinner
+			destRect.x - 125.0f * camera.zoom,
+			spinnerBounds.y + spinnerBounds.height + 10.0f * camera.zoom,
 			dropboxWidth,
 			dropboxHeight
 		};
-
 		int activeOption = bone->keyframe[keyframeIndex].coll; 
-		static bool dropBoxEditMode = false;  // NO FUNCIONA BIEN
-		const char *options = "#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3";  // Box
-
-		// Dibujar el DropBox
-		if (GuiDropdownBox(dropboxBounds, options, &activeOption, dropBoxEditMode))
-		{
-			dropBoxEditMode = !dropBoxEditMode;  // Cambia el modo de edición si se hace clic
-
-			if (keyframeIndex != -1)
+		static bool dropBoxEditMode = false;
+		const char *options = "#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3";
+		// Dibujar el DroBox
+		if (keyframeIndex != -1)
+			if (GuiDropdownBox(dropboxBounds, options, &activeOption, dropBoxEditMode))
 			{
+				dropBoxEditMode = !dropBoxEditMode;
+				if (keyframeIndex != -1)
 					bone->keyframe[keyframeIndex].coll = activeOption;
 			}
-		}
-
 		GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
 	}
 
-
 	if (!textureJustClosed)
-	{
 		for (int i = 0; i < bone->keyframeCount; i++)
 			if (bone->keyframe[i].time == time)
 				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && bone->keyframe[0].partex > -1)
@@ -484,12 +423,10 @@ void DrawOnTop(Bone* bone, int time)
 							showTexture = true;
 						}
 				}
-	}
 }
 
 void UpdateGUI(void)
 {
-//aun no funciona
 	if (IsKeyPressed(KEY_P))
 	{
 		HandleDirectionChange(1, maxTime);
@@ -516,7 +453,7 @@ void UpdateGUI(void)
 		if (tempValuesSet)
 			ResetBoneToOriginalState(currentBone);
 	}
-
+	
 	if (forwAnim)
 	{  
 		HandleDirectionChange(1, maxTime);
@@ -582,7 +519,6 @@ void InitializeGUI(void)
 
 void DrawGUI(void)
 {
-
 	// Toggles
 	float z = camera.zoom;
 	char *animText;
@@ -652,7 +588,6 @@ void DrawGUI(void)
 				for (int j = 0; j < currentBone->keyframeCount; j++)
 					if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
 						isKeyframe[currentBone->keyframe[j].time] = true;
-			// Si se obtiene un índice válido, actualizar la textura seleccionada
 			if (showTexture)
 			{
 				int textureCount = 0; 
@@ -694,7 +629,6 @@ void DrawGUI(void)
 			DrawText(TextFormat("%d", i), posX, sliderBounds.y - 25 * z, 15 * z, textColor);
 		}
 	}
-
 	// Info
 	if (GuiButton((Rectangle){20 * z, 10 * z, 50 * z, 30 * z}, "#14#Load"))
 		root = CleanAndLoadAnimation(root);
