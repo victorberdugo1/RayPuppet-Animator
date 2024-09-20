@@ -103,102 +103,17 @@ int	boneInterAnimation(Bone *root, Bone *introot, int time, float intindex)
 	return (keyframeUpdated || others);
 }
 
-Bone *boneCleanAnimation(Bone *root, t_mesh *body, char *path)
+Bone *boneCleanAnimation(Bone *root, char *path)
 {
 	if (!root)
 		return (NULL);
 	root->keyframeCount = 0;
 	for (int i = 0; i < root->childCount; i++)
 	{
-		boneCleanAnimation(root->child[i],body,path);
+		boneCleanAnimation(root->child[i],path);
 	}
 	return (root);
 }
-/*
-int boneAnimate(Bone *root, int time)
-{
-	int kfUpd = 0;
-
-	if (!root)
-		return (0);
-	for (int kfIdx = 0; kfIdx < root->keyframeCount; kfIdx++)
-	{
-		if (root->keyframe[kfIdx].time == time)
-		{
-			if (kfIdx < root->keyframeCount - 1)
-			{
-				float tim = root->keyframe[kfIdx + 1].time - root->keyframe[kfIdx].time;
-				root->depth = root->keyframe[kfIdx].layer;
-				root->effect = root->keyframe[kfIdx].coll;
-				root->frame = root->keyframe[kfIdx].partex;
-				root->offA = (root->keyframe[kfIdx + 1].angle - root->keyframe[kfIdx].angle) / tim;
-				root->offL = (root->keyframe[kfIdx + 1].length - root->keyframe[kfIdx].length) / tim;
-			}
-			else
-				root->offA = root->offL = 0;
-			kfUpd = 1;
-			break;
-		}
-		else if (root->keyframe[kfIdx].time > time)
-			break;
-	}
-	if (kfUpd)
-	{
-		root->a += root->offA;
-		root->l += root->offL;
-	}
-	int others = 0;
-	for (int i = 0; i < root->childCount; i++)
-	{
-		if (boneAnimate(root->child[i], time))
-			others = 1;
-	}
-	return (kfUpd || others);
-}
-
-
-int boneAnimateReverse(Bone *root, int time)
-{
-	int kfUpd = 0;
-
-	if (!root)
-		return 0;
-
-	for (int kfIdx = root->keyframeCount - 1; kfIdx >= 0; kfIdx--)
-	{
-		if (root->keyframe[kfIdx].time == time)
-		{
-			if (kfIdx > 0)
-			{
-				float tim = root->keyframe[kfIdx].time - root->keyframe[kfIdx - 1].time;
-				root->depth = root->keyframe[kfIdx].layer;
-				root->effect = root->keyframe[kfIdx].coll;
-				root->frame = root->keyframe[kfIdx].partex;
-				root->offA = (root->keyframe[kfIdx].angle - root->keyframe[kfIdx - 1].angle) / tim;
-				root->offL = (root->keyframe[kfIdx].length - root->keyframe[kfIdx - 1].length) / tim;
-			}
-			else
-				root->offA = root->offL = 0;
-			kfUpd = 1;
-			break ;
-		}
-		else if (root->keyframe[kfIdx].time < time)
-			break ;
-	}
-	if (kfUpd)
-	{
-		root->a -= root->offA;
-		root->l -= root->offL;
-	}
-	int others = 0;
-	for (int i = 0; i < root->childCount; i++)
-	{
-		if (boneAnimateReverse(root->child[i], time))
-			others = 1;
-	}
-	return (kfUpd || others);
-}
-*/
 
 int boneAnimate(Bone *root, int time)
 {

@@ -60,8 +60,7 @@ int main(void)
         camera.offset = (Vector2){ 0.0f, 0.0f };
 		float zoomX = (float)windowWidth / (float)SCREEN_WIDTH;
         float zoomY = (float)windowHeight / (float)SCREEN_HEIGHT;
-        camera.zoom = (zoomX < zoomY) ? zoomX : zoomY; // Mantener la relación de aspecto
-		
+        camera.zoom = (zoomX < zoomY) ? zoomX : zoomY;
 
 		BeginDrawing();
 		ClearBackground(GRAY);		
@@ -80,11 +79,8 @@ int main(void)
 		else
 			DrawOnTop(currentBone, frameNum);
 
-
-
 		EndDrawing();
 	}
-	boneDumpAnim(root, 0);
 	CloseWindow();
 	return 0;
 }

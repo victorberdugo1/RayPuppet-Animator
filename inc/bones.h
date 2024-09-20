@@ -80,7 +80,7 @@ void boneDumpAnim(Bone *root, uint8_t level);
 Bone* boneFindByName(Bone *root, char *name);
 int boneInterAnimation(Bone *root, Bone *introot, int time, float intindex);
 int boneAnimate(Bone *root, int time);
-Bone* boneCleanAnimation(Bone *root, t_mesh *body, char *path);
+Bone* boneCleanAnimation(Bone *root, char *path);
 int boneAnimateReverse(Bone *root, int time);
 void boneListNames(Bone *root, char names[MAX_BONECOUNT][99]);
 Bone* boneChangeAnimation(Bone *root, char *path);

@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/19 23:41:23 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/20 19:39:40 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,102 @@ bool hideSlide = false;
 float newLength,newAngle;
 int keyframeIndex = -1;
     
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
+char* SelectFile() {
+    static char fileName[128];
+    char command[256];
+
+    snprintf(command, sizeof(command), "zenity --file-selection --title=\"Seleccionar archivo de animación\"");
+
+    FILE *fp = popen(command, "r");
+    if (fp == NULL) {
+        return NULL;
+    }
+
+    fgets(fileName, sizeof(fileName), fp);
+    fileName[strcspn(fileName, "\n")] = 0;
+
+    pclose(fp);
+
+    if (strlen(fileName) == 0) {
+        return NULL;
+    }
+
+    return fileName;
+}
+
+Bone* CleanAndLoadAnimation(Bone *root)
+{
+    if (!root) {
+        return NULL;
+    }
+
+    char *filePath = SelectFile();
+    if (!filePath) {
+        return NULL;
+    }
+
+    boneCleanAnimation(root, filePath);
+
+    animationLoadKeyframes(filePath, root);
+
+    return root;
+}
+
+void SaveBoneAnimationToFile(Bone *root) 
+{
+    char fileName[128] = "default.txt";  // Nombre del archivo por defecto
+    char command[256];
+
+    // Creamos el comando para Zenity con un nombre de archivo por defecto
+    snprintf(command, sizeof(command), "zenity --file-selection --save --confirm-overwrite --filename=%s", fileName);
+
+    FILE *fp = popen(command, "r");
+    if (fp == NULL) {
+        printf("No se pudo abrir el diálogo\n");
+        return;
+    }
+
+    // Obtenemos el nombre del archivo que el usuario selecciona
+    fgets(fileName, sizeof(fileName), fp);
+    fileName[strcspn(fileName, "\n")] = 0;  // Eliminamos el salto de línea final
+
+    pclose(fp);
+
+    // Verificamos si el usuario seleccionó un archivo
+    if (strlen(fileName) == 0) {
+        printf("No se seleccionó ningún archivo.\n");
+        return;
+    }
+
+    FILE *file = fopen(fileName, "w");
+    if (!file) {
+        printf("Error al abrir el archivo: %s\n", fileName);
+        return;
+    }
+
+    // Guardamos el stdout original para restaurarlo después
+    int originalStdout = dup(STDOUT_FILENO);
+    // Redirigimos stdout al archivo
+    dup2(fileno(file), STDOUT_FILENO);
+
+    // Llamamos a la función original para que escriba en el archivo
+    boneDumpAnim(root, 0);
+
+    // Restauramos stdout
+    fflush(stdout);
+    dup2(originalStdout, STDOUT_FILENO);
+    close(originalStdout);
+
+    fclose(file);
+    printf("Animación guardada en: %s\n", fileName);
+}
+
+ 
 void ResetBoneToOriginalState(Bone* bone)
 {
 	if (tempValuesSet)
@@ -487,6 +582,7 @@ void InitializeGUI(void)
 
 void DrawGUI(void)
 {
+
 	// Toggles
 	float z = camera.zoom;
 	char *animText;
@@ -600,15 +696,19 @@ void DrawGUI(void)
 	}
 
 	// Info
-	DrawText(TextFormat("Bone: %s", currentBone ? currentBone->name : "None"),10 * z,40 * z,20 * z, WHITE);
-	DrawText(TextFormat("Length: %.2f", currentBone ? currentBone->l : 0.0f),10 * z,70 * z, 20 * z, WHITE);
-	DrawText(TextFormat("Angle: %.2f", currentBone ? currentBone->a : 0.0f),10 * z,100 * z, 20 * z, WHITE);
-	DrawText(TextFormat("Frame Number: %d", frameNum), 10 * z, 10 * z, 20 * z, WHITE);
-
+	if (GuiButton((Rectangle){20 * z, 10 * z, 50 * z, 30 * z}, "#14#Load"))
+		root = CleanAndLoadAnimation(root);
+	if (GuiButton((Rectangle){80 * z, 10 * z, 50 * z, 30 * z}, "#02#Save"))	
+		SaveBoneAnimationToFile(root);
+	DrawText(TextFormat("Frame Number: %d", frameNum), 15 * z, 50 * z, 20 * z, WHITE);
+	DrawText(TextFormat("Bone: %s",currentBone ? currentBone->name : "None"),15 * z,80 * z,20 * z, WHITE);
+	DrawText(TextFormat("Length: %.2f",currentBone ? currentBone->l : 0.0f),15 * z,110 * z, 20 * z, WHITE);
+	DrawText(TextFormat("Angle: %.2f",currentBone ? currentBone->a : 0.0f),15 * z,140 * z, 20 * z, WHITE);
+		
 	if (keyframeStatus)
-		DrawText("Keyframe encontrado", 10 * z, 130 * z, 20 * z, GREEN);
+		DrawText("Keyframe encontrado", 15 * z, 170 * z, 20 * z, GREEN);
 	else
-		DrawText("Keyframe no encontrado", 10 * z, 130 * z, 20 * z, RED);
+		DrawText("Keyframe no encontrado", 15 * z, 170 * z, 20 * z, RED);
 
 	GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
 }
