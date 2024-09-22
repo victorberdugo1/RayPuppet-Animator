@@ -124,7 +124,6 @@ int boneAnimate(Bone *root, int time)
 	for (int kfIdx = 0; kfIdx < root->keyframeCount; kfIdx++)
 	{
 		if (root->keyframe[kfIdx].time < time && time <= root->keyframe[kfIdx + 1].time)
-		//if (root->keyframe[kfIdx].time == time)
 		{
 			if (kfIdx < root->keyframeCount - 1)
 			{
@@ -168,7 +167,6 @@ int boneAnimateReverse(Bone *root, int time)
 	for (int kfIdx = root->keyframeCount - 1; kfIdx >= 0; kfIdx--)
 	{
 		if (root->keyframe[kfIdx].time > time && time >= root->keyframe[kfIdx - 1].time)
-		//if (root->keyframe[kfIdx].time == time)
 		{
 			if (kfIdx > 0)
 			{
@@ -393,7 +391,7 @@ void LoadTextures(void)
     char resultPath[64];
     int count = 19;
 
-    sprintf(resultPath, "Textures/%s", nameFTx);
+    sprintf(resultPath, "%s/Textures/%s",nameFTx, nameFTx);
 
     for (int i = 1; i <= count; i++)
     {

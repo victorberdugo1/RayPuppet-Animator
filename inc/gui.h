@@ -13,7 +13,6 @@ extern bool		drawBones;
 extern bool		animMode;
 extern float	frameNumFloat;
 extern Camera2D	camera;
-
 // Declaración de funciones
 void	InitializeGUI(void);
 void	UpdateGUI(void);

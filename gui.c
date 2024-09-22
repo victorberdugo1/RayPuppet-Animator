@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/20 22:44:03 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/23 00:01:39 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,14 +15,13 @@
 #include "gui.h"
 #include <string.h>
 
-// Declaraciones externas
-extern Bone* currentBone;   // Variable global externa para el hueso actual
-extern Bone* bones[MAX_BONES]; // Lista de huesos
-extern int boneCount;       // Contador de huesos
-extern int selectedBone;    // Índice del hueso seleccionado
-extern int frameNum;        // Número de fotograma actual
-extern Bone* root;          // Hueso raíz
-
+extern Bone* currentBone;
+extern Bone* bones[MAX_BONES];
+extern int boneCount;
+extern int selectedBone;
+extern int frameNum;
+extern Bone* root;
+extern t_mesh* mesh; 
 // Variables internas
 static Rectangle scrollPanelBounds = {0};
 static Rectangle contentBounds = {0};
@@ -38,7 +37,7 @@ float tempLength = 0.0f;
 float tempAngle = 0.0f;
 bool tempValuesSet = false;
 float cameraZoom = 1.0f;
-static Texture2D selectedTexture = { 0 };
+static Texture2D selectedTexture = {0};
 static bool showTexture = false;
 bool textureJustClosed = false;
 int layerValue = 0;
@@ -62,15 +61,18 @@ bool HandleDirectionChange(int newDirection, int maxTime)
 			while (frameNum >= 0)
 				boneAnimateReverse(root, --frameNum);
 		direction = newDirection;
-		return true;
+		return true ;
 	}
-	return false;
+	return false ;
 }
 
 void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 {
-	int newFrame = (int)sliderValue;
-	int newDirection = (newFrame > frameNum) ? 1 : (newFrame < frameNum) ? -1 : direction;
+	int	newFrame;
+	int	newDirection;
+
+	newFrame = (int)sliderValue;
+	newDirection = (newFrame > frameNum) ? 1 : (newFrame < frameNum) ? -1 : direction;
 	HandleDirectionChange(newDirection, maxTime);
 	while (frameNum != newFrame)
 	{
@@ -102,15 +104,15 @@ Bone* CleanAndLoadAnimation(Bone *root)
 {
 	if (!root)
 		return NULL;
-while (frameNum >= 0)
-				boneAnimateReverse(root, --frameNum);
-
+	
+	while (frameNum >= 0)
+		boneAnimateReverse(root, --frameNum);
 	char *filePath = SelectFile();
 	if (!filePath)
-        return NULL;
-    boneCleanAnimation(root, filePath);
-    animationLoadKeyframes(filePath, root);
-    return root;
+		return NULL;
+	boneCleanAnimation(root, filePath);
+	animationLoadKeyframes(filePath, root);
+	return root;
 }
 
 void SaveBoneAnimationToFile(Bone *root) 
@@ -140,6 +142,72 @@ void SaveBoneAnimationToFile(Bone *root)
     close(originalStdout);
     fclose(file);
     printf("Animación guardada en: %s\n", fileName);
+}
+
+void boneClearKeyframes(Bone *root)
+{
+    if (!root)
+        return;
+
+	for (int i = 0; i < root->keyframeCount; i++)
+	{
+        root->keyframe[i] = (Keyframe){0};
+    printf("Hueso %s, Conteo de keyframes: %d\n", root->name, root->keyframe[i].time );
+	}
+	
+	root->keyframeCount = 0;
+
+    
+	for (int i = 0; i < root->childCount; i++)
+    {
+        boneClearKeyframes(root->child[i]);
+    }
+}
+
+
+Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
+{
+    if (!root)
+        return NULL;
+    while (frameNum >= 0)
+        boneAnimateReverse(root, --frameNum);
+
+	boneClearKeyframes(root);
+
+	char *filePath = SelectFile();
+    if (!filePath)
+        return NULL;
+
+    char baseName[128], folderName[128];
+    strcpy(baseName, filePath);
+    char *dot = strrchr(baseName, '.');
+    if (dot)
+        *dot = '\0'; // Cortar el nombre base antes del punto
+
+    // Extraer el nombre de la carpeta
+    const char *lastSlash = strrchr(filePath, '/');
+    if (lastSlash)
+	{
+        size_t folderLen = lastSlash - filePath;
+        strncpy(folderName, filePath, folderLen);
+        folderName[folderLen] = '\0';
+    } else
+	{
+        strcpy(folderName, ".");
+	}
+    // Rutas de los archivos
+    char skeletonPath[128], meshPath[128], animPath[128];
+    sprintf(skeletonPath, "%s", filePath);
+	sprintf(meshPath, "%s/%sMesh.txt", folderName, baseName);
+	sprintf(animPath, "%sAnim.txt", baseName);
+
+    boneCleanAnimation(root, skeletonPath);
+	root = boneLoadStructure(skeletonPath);
+	meshLoadData(meshPath, mesh, root);
+	LoadTextures();
+	animationLoadKeyframes(animPath, root);
+
+    return root;
 }
 
 void ResetBoneToOriginalState(Bone* bone)
@@ -631,7 +699,8 @@ void DrawGUI(void)
 	}
 	// Info
 	if (GuiButton((Rectangle){20 * z, 10 * z, 50 * z, 30 * z}, "#14#Load"))
-		root = CleanAndLoadAnimation(root);
+		//root = CleanAndLoadAnimation(root);
+		root = CleanAndLoadModel(root, mesh);
 	if (GuiButton((Rectangle){80 * z, 10 * z, 50 * z, 30 * z}, "#02#Save"))	
 		SaveBoneAnimationToFile(root);
 	DrawText(TextFormat("Frame Number: %d", frameNum), 15 * z, 50 * z, 20 * z, WHITE);
