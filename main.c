@@ -37,6 +37,8 @@ int main(void)
 	//char		names[MAX_BONES][99] = {0};
 	//boneListNames(root, names);
 	meshLoadData("Skel/SkelMesh.txt", &mesh, root);
+	meshLoadData("SkelMesh8.txt", &mesh, root);
+	meshLoadData("Skel/SkelMesh.txt", &mesh, root);
 	LoadTextures();
 	animationLoadKeyframes("Skel/SkelAnim.txt", root);
 
@@ -61,6 +63,7 @@ int main(void)
 		UpdateGUI();
 
 		BeginMode2D(camera);
+		if(animMode)
 		meshDraw(&mesh, root, frameNum);
         DrawBones(root, drawBones);
 		EndMode2D();

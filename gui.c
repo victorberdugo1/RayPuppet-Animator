@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/23 02:34:41 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/23 15:59:42 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,53 +142,6 @@ void SaveBoneAnimationToFile(Bone *root)
     close(originalStdout);
     fclose(file);
     printf("Animación guardada en: %s\n", fileName);
-}
-
-Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
-{
-    if (!root)
-        return NULL;
-    while (frameNum >= 0){
-        boneAnimateReverse(root, --frameNum);
-	}
-	char *filePath = SelectFile();
-    if (!filePath)
-        return NULL;
-
-    char baseName[128], folderName[128];
-    strcpy(baseName, filePath);
-    char *dot = strrchr(baseName, '.');
-    if (dot)
-        *dot = '\0'; // Cortar el nombre base antes del punto
-
-    // Extraer el nombre de la carpeta
-    const char *lastSlash = strrchr(filePath, '/');
-    if (lastSlash)
-	{
-        size_t folderLen = lastSlash - filePath;
-        strncpy(folderName, filePath, folderLen);
-        folderName[folderLen] = '\0';
-    }else
-	{
-        strcpy(folderName, ".");
-	}
-    // Rutas de los archivos
-    char skeletonPath[128], meshPath[2128], animPath[128];
-    sprintf(skeletonPath, "%s", filePath);
-	sprintf(meshPath, "%sMesh.txt", baseName);
-	//printf( "%sMesh.txt",  baseName);
-	sprintf(animPath, "%sAnim.txt", baseName);
-
-    //boneCleanAnimation(root, skeletonPath);
-	root = boneLoadStructure(skeletonPath);
-    root->x = GetScreenWidth() / 15.0f;
-    root->y = GetScreenHeight() / 2.1f;
-	//meshLoadData(meshPath, mesh, root);
-	//LoadTextures();
-	boneCleanAnimation(root, animPath);
-	animationLoadKeyframes(animPath, root);
-
-    return root;
 }
 
 void ResetBoneToOriginalState(Bone* bone)
@@ -679,9 +632,10 @@ void DrawGUI(void)
 		}
 	}
 	// Info
+	if (GuiButton((Rectangle){(SCREEN_WIDTH - 70) * z, 7 * z, 50 * z, 30 * z}, "#14#Open"))
+		root = CleanAndLoadModel(root, &mesh);
 	if (GuiButton((Rectangle){20 * z, 10 * z, 50 * z, 30 * z}, "#14#Load"))
 		root = CleanAndLoadAnimation(root);
-		//root = CleanAndLoadModel(root, mesh);
 	if (GuiButton((Rectangle){80 * z, 10 * z, 50 * z, 30 * z}, "#02#Save"))	
 		SaveBoneAnimationToFile(root);
 	DrawText(TextFormat("Frame Number: %d", frameNum), 15 * z, 50 * z, 20 * z, WHITE);
@@ -695,4 +649,49 @@ void DrawGUI(void)
 		DrawText("Keyframe no encontrado", 15 * z, 170 * z, 20 * z, RED);
 
 	GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
+}
+
+Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
+{
+    if (!root)
+        return NULL;
+    while (frameNum >= 0){
+        boneAnimateReverse(root, --frameNum);
+	}
+	char *filePath = SelectFile();
+    if (!filePath)
+        return NULL;
+
+    char baseName[128], folderName[128];
+    strcpy(baseName, filePath);
+    char *dot = strrchr(baseName, '.');
+    if (dot)
+        *dot = '\0';
+    // Extraer el nombre de la carpeta
+    const char *lastSlash = strrchr(filePath, '/');
+    if (lastSlash)
+	{
+        size_t folderLen = lastSlash - filePath;
+        strncpy(folderName, filePath, folderLen);
+        folderName[folderLen] = '\0';
+    }else
+	{
+        strcpy(folderName, ".");
+	}
+    // Rutas de los archivos
+    char skeletonPath[128], meshPath[128], animPath[128];
+    sprintf(skeletonPath, "%s", filePath);
+	sprintf(meshPath, "%sMesh.txt", baseName);
+	sprintf(animPath, "%sAnim.txt", baseName);
+
+	root = boneLoadStructure(skeletonPath);
+    root->x = GetScreenWidth() / 5.0f;
+    root->y = GetScreenHeight() / 2.1f;
+	meshLoadData(meshPath, mesh, root);
+	//mesh->vertexCount = 4; EL PROBLEMA ESTA QUE DRAW NO PUEDE ESTAR MIENTRAS E HACE ESTO
+    LoadTextures();
+	boneCleanAnimation(root, animPath);
+	animationLoadKeyframes(animPath, root);
+
+    return root;
 }

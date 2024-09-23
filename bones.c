@@ -341,50 +341,6 @@ void DrawBones(Bone *root, bool drawBonesEnabled)
 }
 
 
-void meshLoadData(char *file, t_mesh *mesh, Bone *root)
-{
-	FILE *fd = fopen(file, "r");
-	if (!fd) return;
-	char buffer[4096], blist[4096];
-	int i, t, j;
-	float x, y;
-	if (fgets(buffer, sizeof(buffer), fd) &&
-			sscanf(buffer, "%49s %d %d", nameFTx, &(mesh->vertexCount), &contTxt) == 3)
-	{
-		for (i = 0; i < mesh->vertexCount; i++)
-		{
-			if (fgets(buffer, sizeof(buffer), fd) &&
-					sscanf(buffer, "%d %f %f %[^\n]", &t, &x, &y, blist) == 4)
-			{
-				mesh->v[i].v.x = x;
-				mesh->v[i].v.y = y;
-				mesh->v[i].t = t;
-				char *str = blist;
-				j = 0;
-				char *tok = strtok(str, " ");
-				while (tok && j < 10)
-				{
-					mesh->v[i].bone[j] = boneFindByName(root, tok);
-					if (mesh->v[i].bone[j])
-					{
-						tok = strtok(NULL, " ");
-						mesh->v[i].weight[j] = (tok) ? atof(tok) : 0.0f;
-						j++;
-					}
-					tok = strtok(NULL, " ");
-				}
-				mesh->v[i].boneCount = j;
-			}
-			else
-			{
-				fclose(fd);
-				return ;
-			}
-		}
-	}
-	fclose(fd);
-}
-
 void LoadTextures(void)
 {
     char path[64];
@@ -603,3 +559,49 @@ void animationLoadKeyframes(const char *path, Bone *root)
 	}
 	fclose(file);
 }
+
+
+void meshLoadData(char *file, t_mesh *mesh, Bone *root)
+{
+	FILE *fd = fopen(file, "r");
+	if (!fd) return;
+	char buffer[4096], blist[4096];
+	int i, t, j;
+	float x, y;
+	if (fgets(buffer, sizeof(buffer), fd) &&
+			sscanf(buffer, "%49s %d %d", nameFTx, &(mesh->vertexCount), &contTxt) == 3)
+	{
+		for (i = 0; i < mesh->vertexCount; i++)
+		{
+			if (fgets(buffer, sizeof(buffer), fd) &&
+					sscanf(buffer, "%d %f %f %[^\n]", &t, &x, &y, blist) == 4)
+			{
+				mesh->v[i].v.x = x;
+				mesh->v[i].v.y = y;
+				mesh->v[i].t = t;
+				char *str = blist;
+				j = 0;
+				char *tok = strtok(str, " ");
+				while (tok && j < 10)
+				{
+					mesh->v[i].bone[j] = boneFindByName(root, tok);
+					if (mesh->v[i].bone[j])
+					{
+						tok = strtok(NULL, " ");
+						mesh->v[i].weight[j] = (tok) ? atof(tok) : 0.0f;
+						j++;
+					}
+					tok = strtok(NULL, " ");
+				}
+				mesh->v[i].boneCount = j;
+			}
+			else
+			{
+				fclose(fd);
+				return ;
+			}
+		}
+	}
+	fclose(fd);
+}
+

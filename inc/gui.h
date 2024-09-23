@@ -20,5 +20,6 @@ void	DrawGUI(void);
 void	DrawOnTop(Bone* bone, int time);
 void	mouseAnimate(Bone* bone, int time);
 int		UpdateBoneProperties(Bone* bone, int time);
+Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh);
 
 #endif // GUI_H
