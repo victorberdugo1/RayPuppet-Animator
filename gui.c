@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/23 15:59:42 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/23 22:07:16 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,35 +15,35 @@
 #include "gui.h"
 #include <string.h>
 
-extern Bone* currentBone;
-extern Bone* bones[MAX_BONES];
-extern int boneCount;
-extern int selectedBone;
-extern int frameNum;
-extern Bone* root;
-extern t_mesh* mesh;
+extern Bone*	currentBone;
+extern Bone*	bones[MAX_BONES];
+extern int		boneCount;
+extern int		selectedBone;
+extern int		frameNum;
+extern Bone*	root;
+extern t_mesh*	mesh;
 // Variables internas
-static Rectangle scrollPanelBounds = {0};
-static Rectangle contentBounds = {0};
-static Vector2 scrollOffset = {0};
-static bool isKeyframe[MAX_BONES] = {0};
-bool forwAnim = 0;
-bool revAnim = 0;
-int keyframeStatus = 0;
-float frameNumFloat;
-bool drawBones = true;
-int direction = 1 ;
-float tempLength = 0.0f;
-float tempAngle = 0.0f;
-bool tempValuesSet = false;
-float cameraZoom = 1.0f;
-static Texture2D selectedTexture = {0};
-static bool showTexture = false;
-bool textureJustClosed = false;
-int layerValue = 0;
-bool hideSlide = false;
-float newLength,newAngle;
-int keyframeIndex = -1;
+static Rectangle	scrollPanelBounds = {0};
+static Rectangle	contentBounds = {0};
+static Vector2		scrollOffset = {0};
+static bool			isKeyframe[MAX_BONES] = {0};
+bool				forwAnim = 0;
+bool				revAnim = 0;
+int					keyframeStatus = 0;
+float				frameNumFloat;
+bool				drawBones = true;
+int					direction = 1 ;
+float				tempLength = 0.0f;
+float				tempAngle = 0.0f;
+bool				tempValuesSet = false;
+float				cameraZoom = 1.0f;
+static Texture2D	selectedTexture = {0};
+static bool			showTexture = false;
+bool				textureJustClosed = false;
+int					layerValue = 0;
+bool				hideSlide = false;
+float				newLength,newAngle;
+int					keyframeIndex = -1;
     
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,6 +81,7 @@ void UpdateAnimationWithSlider(float sliderValue, int maxTime)
 		else
 			boneAnimateReverse(root, --frameNum);
 	}
+	openFile = false;
 }
 
 char* SelectFile(void)
@@ -120,7 +121,6 @@ void SaveBoneAnimationToFile(Bone *root)
     char fileName[128] = "default.txt";
 	char command[256];
 
-    // Creamos el comando con un nombre de archivo por defecto
     snprintf(command, sizeof(command),
 			"zenity --file-selection --save --confirm-overwrite --filename=%s", fileName);
     FILE *fp = popen(command, "r");
@@ -278,9 +278,7 @@ void mouseAnimate(Bone* bone, int time)
 		}
 	}
 	if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
-	{
 		hideSlide = false;
-	}
 }
 	
 void DrawOnTop(Bone* bone, int time)
@@ -632,8 +630,11 @@ void DrawGUI(void)
 		}
 	}
 	// Info
-	if (GuiButton((Rectangle){(SCREEN_WIDTH - 70) * z, 7 * z, 50 * z, 30 * z}, "#14#Open"))
+	if (GuiButton((Rectangle){(SCREEN_WIDTH - 70) * z, 7 * z, 50 * z, 30 * z}, "#149#Open"))
+	{
+		openFile = true;
 		root = CleanAndLoadModel(root, &mesh);
+	}
 	if (GuiButton((Rectangle){20 * z, 10 * z, 50 * z, 30 * z}, "#14#Load"))
 		root = CleanAndLoadAnimation(root);
 	if (GuiButton((Rectangle){80 * z, 10 * z, 50 * z, 30 * z}, "#02#Save"))	
@@ -667,7 +668,6 @@ Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
     char *dot = strrchr(baseName, '.');
     if (dot)
         *dot = '\0';
-    // Extraer el nombre de la carpeta
     const char *lastSlash = strrchr(filePath, '/');
     if (lastSlash)
 	{
@@ -678,20 +678,20 @@ Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
 	{
         strcpy(folderName, ".");
 	}
-    // Rutas de los archivos
     char skeletonPath[128], meshPath[128], animPath[128];
     sprintf(skeletonPath, "%s", filePath);
 	sprintf(meshPath, "%sMesh.txt", baseName);
 	sprintf(animPath, "%sAnim.txt", baseName);
 
 	root = boneLoadStructure(skeletonPath);
-    root->x = GetScreenWidth() / 5.0f;
-    root->y = GetScreenHeight() / 2.1f;
+    root->x = GetScreenWidth() / 3.55f;
+    root->y = GetScreenHeight() / 2.0f;
+	//root->x = (GetScreenWidth() / 2.0f) *camera.zoom;
+	//root->y = (GetScreenHeight() / 1.1f) * camera.zoom;
+
 	meshLoadData(meshPath, mesh, root);
-	//mesh->vertexCount = 4; EL PROBLEMA ESTA QUE DRAW NO PUEDE ESTAR MIENTRAS E HACE ESTO
     LoadTextures();
 	boneCleanAnimation(root, animPath);
 	animationLoadKeyframes(animPath, root);
-
     return root;
 }

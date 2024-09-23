@@ -11,6 +11,7 @@ extern float	frameNumFloat;
 extern int		keyframeStatus;
 extern bool		drawBones;
 extern bool		animMode;
+extern bool		openFile;
 extern float	frameNumFloat;
 extern Camera2D	camera;
 // Declaración de funciones

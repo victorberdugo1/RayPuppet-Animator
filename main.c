@@ -16,8 +16,8 @@ int			frameNum = 0;
 Bone*		root = NULL;
 Camera2D	camera = { 0 };
 bool		animMode = false;
+bool		openFile = false;
 t_mesh		mesh;
-
 
 int main(void)
 {
@@ -36,8 +36,6 @@ int main(void)
 	root->y = GetScreenHeight() / 1.1f;
 	//char		names[MAX_BONES][99] = {0};
 	//boneListNames(root, names);
-	meshLoadData("Skel/SkelMesh.txt", &mesh, root);
-	meshLoadData("SkelMesh8.txt", &mesh, root);
 	meshLoadData("Skel/SkelMesh.txt", &mesh, root);
 	LoadTextures();
 	animationLoadKeyframes("Skel/SkelAnim.txt", root);
@@ -63,8 +61,8 @@ int main(void)
 		UpdateGUI();
 
 		BeginMode2D(camera);
-		if(animMode)
-		meshDraw(&mesh, root, frameNum);
+		if(!openFile)
+			meshDraw(&mesh, root, frameNum);
         DrawBones(root, drawBones);
 		EndMode2D();
 		
@@ -72,7 +70,6 @@ int main(void)
 			mouseAnimate(currentBone, frameNum);
 		else
 			DrawOnTop(currentBone, frameNum);
-
 		EndDrawing();
 	}
 	CloseWindow();
