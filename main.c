@@ -31,14 +31,14 @@ int main(void)
 	SetTargetFPS(60);
 	//rlEnableDepthTest();
 	//rlEnableColorBlend();
-    root = boneLoadStructure("Skel/Skel.txt");
-    root->x = GetScreenWidth() / 2.0f;
-    root->y = GetScreenHeight() / 1.1f;
-    char names[MAX_BONES][99] = {0};
-    boneListNames(root, names);
-    meshLoadData("Skel/SkelMesh.txt", &mesh, root);
-    LoadTextures();
-    animationLoadKeyframes("Skel/SkelAnim.txt", root);
+	root = boneLoadStructure("Skel/Skel.txt");
+	root->x = GetScreenWidth() / 2.0f;
+	root->y = GetScreenHeight() / 1.1f;
+	//char		names[MAX_BONES][99] = {0};
+	//boneListNames(root, names);
+	meshLoadData("Skel/SkelMesh.txt", &mesh, root);
+	LoadTextures();
+	animationLoadKeyframes("Skel/SkelAnim.txt", root);
 
     frameNum = 1;
 	InitializeGUI();
