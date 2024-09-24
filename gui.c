@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/23 22:08:16 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/24 12:18:40 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -549,29 +549,34 @@ void DrawGUI(void)
 		contentBounds.width * z, contentBounds.height * z};
 
 	int visibleButtonIndex = 0;
-
-	scaledContent.height = boneCount * 30 * z; // Altura dinámica basada en la cantidad de huesos
+	scaledContent.height = boneCount * 30 * z; 
 
 	BeginScissorMode(scaledPanel.x, scaledPanel.y, scaledPanel.width, scaledPanel.height);
-	
 	GuiScrollPanel(scaledPanel, NULL, scaledContent, &scrollOffset, NULL);
 
-	for (int i = 0; i < boneCount; i++) {
-		if (showTexture && bones[i]->keyframe[0].partex == -1) {
-			continue; // Saltar este botón y pasar al siguiente
-		}
+	for (int i = 0; i < boneCount; i++)
+	{
+		if (showTexture && bones[i]->keyframe[0].partex == -1)
+			continue;
 		if (bones[i]->keyframe[0].partex != -1)
 			GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(BLUE));
 		else
 			GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(GRAY));
 
-		Rectangle buttonRect = (Rectangle){
+		Rectangle buttonRect = (Rectangle)
+		{
 			scaledPanel.x, 
 				(scaledPanel.y + visibleButtonIndex * 30 * z + scrollOffset.y), 
 				scaledPanel.width - 20 * z, 20 * z
 		};
 
-		if (GuiButton(buttonRect, bones[i]->name)) {
+		if (CheckCollisionPointRec(GetMousePosition(), scaledPanel))
+			GuiSetState(STATE_NORMAL);
+		else 
+			GuiSetState(STATE_DISABLED);
+		GuiButton(buttonRect, bones[i]->name);
+		if (GuiGetState() == STATE_NORMAL && GuiButton(buttonRect, bones[i]->name))
+		{
 			if (tempValuesSet)
 			{
 				HandleDirectionChange(1, maxTime);
@@ -603,6 +608,7 @@ void DrawGUI(void)
 		visibleButtonIndex++;
 	}
 	EndScissorMode();
+	GuiSetState(STATE_NORMAL);
 
 	// Draw the slider
 	if (!forwAnim & !revAnim & !hideSlide) {
