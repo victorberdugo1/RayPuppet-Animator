@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/24 12:18:40 by victor           ###   ########.fr       */
+/*   Updated: 2024/09/28 20:51:54 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ extern int		boneCount;
 extern int		selectedBone;
 extern int		frameNum;
 extern Bone*	root;
-extern t_mesh*	mesh;
+extern t_mesh	mesh;
 // Variables internas
 static Rectangle	scrollPanelBounds = {0};
 static Rectangle	contentBounds = {0};
