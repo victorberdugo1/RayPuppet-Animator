@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/09/28 20:51:54 by victor           ###   ########.fr       */
+/*   Updated: 2024/10/02 15:57:06 by vberdugo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,7 +89,7 @@ char* SelectFile(void)
     static char	fileName[128];
     char		command[256];
 
-    snprintf(command, sizeof(command), "zenity --file-selection --title=\"Select Animation File\"");
+    snprintf(command, sizeof(command), "zenity --file-selection --title=\"Select File\"");
     FILE *fp = popen(command, "r");
     if (fp == NULL)
 		return NULL;
@@ -661,7 +661,13 @@ void DrawGUI(void)
 Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
 {
     if (!root)
+	{
         return NULL;
+	}
+
+	float previousX = root->x;
+    float previousY = root->y;
+
     while (frameNum >= 0){
         boneAnimateReverse(root, --frameNum);
 	}
@@ -690,14 +696,17 @@ Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
 	sprintf(animPath, "%sAnim.txt", baseName);
 
 	root = boneLoadStructure(skeletonPath);
-    root->x = GetScreenWidth() / 3.55f;
-    root->y = GetScreenHeight() / 2.0f;
-	//root->x = (GetScreenWidth() / 2.0f) *camera.zoom;
-	//root->y = (GetScreenHeight() / 1.1f) * camera.zoom;
+    //root->x = GetScreenWidth() / 3.55f;
+    //root->y = GetScreenHeight() / 2.0f;
+	//root->x = (GetScreenWidth() / 2.0f);
+	//root->y = (GetScreenHeight() / 1.1f);
 
 	meshLoadData(meshPath, mesh, root);
     LoadTextures();
 	boneCleanAnimation(root, animPath);
 	animationLoadKeyframes(animPath, root);
+
+	    root->x = previousX;
+    root->y = previousY;
     return root;
 }
