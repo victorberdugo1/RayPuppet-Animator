@@ -340,7 +340,6 @@ void DrawBones(Bone *root, bool drawBonesEnabled)
     }
 }
 
-
 void LoadTextures(void)
 {
     char path[64];
@@ -362,7 +361,6 @@ void LoadTextures(void)
         UnloadImage(image);
     }
 }
-
 
 Matrix GetBoneMatrix(Bone *bone)
 {

@@ -8,24 +8,26 @@ INCLUDE = bones.h raymath.h raylib.h rlgl.h raygui.h gui.h
 
 SRC = main.c bones.c gui.c
 
-OBJ = $(SRC:.c=.o)
+OBJ_DIR = obj
+OBJ = $(SRC:%.c=$(OBJ_DIR)/%.o)
 
 CC = cc
 
 CFLAGS = -Wall -I$(INC_DIR)
 
-LDFLAGS = -L. -lraylib -lm -ldl -lpthread -lGL -lX11
+LDFLAGS = -L. -lraylib -lm -ldl -lpthread -lGL -lX11 #-g -fsanitize=address
 
 all: $(NAME)
 
 $(NAME): $(OBJ)
 	$(CC) $(CFLAGS) -o $(NAME) $(OBJ) $(LDFLAGS)
 
-%.o: %.c $(INCLUDE)
+$(OBJ_DIR)/%.o: %.c	Makefile
+	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ)
+	rm -rf $(OBJ_DIR)
 
 fclean: clean
 	rm -f $(NAME)
