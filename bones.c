@@ -340,13 +340,12 @@ void DrawBones(Bone *root, bool drawBonesEnabled)
     }
 }
 
-void LoadTextures(void)
+void LoadTextures(int count)
 {
     char path[64];
     char resultPath[64];
-    int count = 19;
 
-    sprintf(resultPath, "%s/Textures/%s",nameFTx, nameFTx);
+    sprintf(resultPath, "%s/Textures/%s", nameFTx, nameFTx);
 
     for (int i = 1; i <= count; i++)
     {

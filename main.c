@@ -29,16 +29,41 @@ int main(void)
 	camera.rotation = 0.0f;
 	camera.zoom = 1.0f;
 	SetTargetFPS(60);
-	//rlEnableDepthTest();
+	/*/rlEnableDepthTest();
 	//rlEnableColorBlend();
 	root = boneLoadStructure("Skel/Skel.txt");
 	root->x = GetScreenWidth() / 2.0f;
 	root->y = GetScreenHeight() / 1.1f;
-	//char		names[MAX_BONES][99] = {0};
-	//boneListNames(root, names);
+
 	meshLoadData("Skel/SkelMesh.txt", &mesh, root);
 	LoadTextures();
 	animationLoadKeyframes("Skel/SkelAnim.txt", root);
+	*/
+	static char	fileName[128];
+	char		command[256];
+
+	snprintf(command, sizeof(command), "zenity --file-selection --title=\"Select File\"");
+	FILE *fp = popen(command, "r");
+	if (fp == NULL)
+		return -1;
+	fgets(fileName, sizeof(fileName), fp);
+	fileName[strcspn(fileName, "\n")] = 0;
+	pclose(fp);
+	printf("%s", fileName);
+	char baseName[128];
+	strcpy(baseName, fileName);
+	char *dot = strrchr(baseName, '.');
+	if (dot) *dot = '\0'; 
+	char skeletonPath[128], meshPath[128], animPath[128];
+	sprintf(skeletonPath, "%s", fileName);
+	sprintf(meshPath, "%sMesh.txt", baseName);
+	sprintf(animPath, "%sAnim.txt", baseName);
+	root = boneLoadStructure(skeletonPath);
+	meshLoadData(meshPath, &mesh, root);
+	LoadTextures(mesh.vertexCount);
+	animationLoadKeyframes(animPath, root);
+	root->x = GetScreenWidth() / 2.0f;
+	root->y = GetScreenHeight() / 1.1f;
 
     frameNum = 1;
 	InitializeGUI();
