@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/10/28 10:54:41 by victor           ###   ########.fr       */
+/*   Updated: 2024/12/15 13:54:03 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -398,8 +398,10 @@ void DrawOnTop(Bone* bone, int time)
 		};
 		int activeOption = bone->keyframe[keyframeIndex].coll; 
 		static bool dropBoxEditMode = false;
-		const char *options = "#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3";
-		// Dibujar el DroBox
+//		const char *options = "#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3";
+		const char *options = "#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3;#53#Breathing 4;#34#Wind 5";
+
+		// Dibujar el DropBox
 		if (keyframeIndex != -1)
 			if (GuiDropdownBox(dropboxBounds, options, &activeOption, dropBoxEditMode))
 			{

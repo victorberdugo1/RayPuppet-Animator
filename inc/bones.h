@@ -7,7 +7,9 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "raygui.h"
+#include "rlgl.h"
 
+#define MAX_POINTS 11 
 
 #define MAX_CHCOUNT                99  /* Max children count */
 #define MAX_BONECOUNT              99  /* Max bone count */

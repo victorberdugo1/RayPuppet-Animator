@@ -29,16 +29,17 @@ int main(void)
 	camera.rotation = 0.0f;
 	camera.zoom = 1.0f;
 	SetTargetFPS(60);
-	/*/rlEnableDepthTest();
+	//rlEnableDepthTest();
 	//rlEnableColorBlend();
-	root = boneLoadStructure("Skel/Skel.txt");
-	root->x = GetScreenWidth() / 2.0f;
-	root->y = GetScreenHeight() / 1.1f;
+	
+	//root = boneLoadStructure("Sez/Sez.txt");
+	//root->x = GetScreenWidth() / 2.0f;
+	//root->y = GetScreenHeight() / 1.1f;
+	//meshLoadData("Sez/SezMesh.txt", &mesh, root);
+	//LoadTextures(mesh.vertexCount);
+	//animationLoadKeyframes("Sez/SezAnim.txt", root);
+	
 
-	meshLoadData("Skel/SkelMesh.txt", &mesh, root);
-	LoadTextures();
-	animationLoadKeyframes("Skel/SkelAnim.txt", root);
-	*/
 	static char	fileName[128];
 	char		command[256];
 
@@ -62,10 +63,11 @@ int main(void)
 	meshLoadData(meshPath, &mesh, root);
 	LoadTextures(mesh.vertexCount);
 	animationLoadKeyframes(animPath, root);
+
 	root->x = GetScreenWidth() / 2.0f;
 	root->y = GetScreenHeight() / 1.1f;
 
-    frameNum = 1;
+    frameNum = 0;
 	InitializeGUI();
 
     while (!WindowShouldClose())
@@ -84,7 +86,7 @@ int main(void)
 		DrawGUI();
 		keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
 		UpdateGUI();
-
+		
 		BeginMode2D(camera);
 		if(!openFile)
 			meshDraw(&mesh, root, frameNum);
