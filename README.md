@@ -3,6 +3,7 @@
 <p align="center">
   <img src="rayp.png" alt="so_long" style="width:60%; margin:auto;" />
 </p>
+
 ## Description
 
 **RayPuppet-Animator** is a bone animation system that allows for the manipulation and animation of skeletal models. It uses both 2D and 3D graphics, enabling users to interact with bones and apply animations in real-time. It includes a graphical interface that simplifies texture selection, layer configuration, and keyframe management.
