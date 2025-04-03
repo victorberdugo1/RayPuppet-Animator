@@ -340,16 +340,24 @@ void DrawBones(Bone *root, bool drawBonesEnabled)
     }
 }
 
-void LoadTextures(int count)
+void LoadTextures(t_mesh *mesh)
 {
-    char path[64];
-    char resultPath[64];
+    char path[512];
+    char resultPath[512];
+    int len;
 
-    sprintf(resultPath, "%s/Textures/%s", nameFTx, nameFTx);
+    snprintf(resultPath, sizeof(resultPath), "%s/Textures/%s", nameFTx, nameFTx);
 
-    for (int i = 1; i <= count; i++)
+    for (int i = 0; i <= mesh->vertexCount; i++)
     {
-        sprintf(path, "%s_%d.png", resultPath, i);
+        //if (textures[i] != NULL)
+          //  continue;
+        len = snprintf(path, sizeof(path), "%s_%d.png", resultPath, mesh->v[i].t);
+        if (len < 0 || len >= sizeof(path))
+        {
+            printf("Failed to construct full path for texture %d\n", mesh->v[i].t);
+            continue;
+        }
         Image image = LoadImage(path);
         if (image.data == NULL)
         {
@@ -417,32 +425,31 @@ int compareVerticesByLayer(const void *a, const void *b)
 	if (layerA > layerB) return 1;
 	return 0;
 }
+
 void DrawTexturePoly(Texture2D texture, Vector2 center, Vector2 *points, Vector2 *texcoords, int pointCount, Color tint)
 {
-    rlSetTexture(texture.id);
+	rlSetTexture(texture.id);
 
-    // Texturing is only supported on RL_QUADS
-    rlBegin(RL_QUADS);
+	rlBegin(RL_QUADS);
 
-        rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+	rlColor4ub(tint.r, tint.g, tint.b, tint.a);
 
-        for (int i = 0; i < pointCount - 1; i++)
-        {
-            rlTexCoord2f(0.5f, 0.5f);
-            rlVertex2f(center.x, center.y);
+	for (int i = 0; i < pointCount - 1; i++)
+	{
+		rlTexCoord2f(0.5f, 0.5f);
+		rlVertex2f(center.x, center.y);
 
-            rlTexCoord2f(texcoords[i].x, texcoords[i].y);
-            rlVertex2f(points[i].x + center.x, points[i].y + center.y);
+		rlTexCoord2f(texcoords[i].x, texcoords[i].y);
+		rlVertex2f(points[i].x + center.x, points[i].y + center.y);
 
-            rlTexCoord2f(texcoords[i + 1].x, texcoords[i + 1].y);
-            rlVertex2f(points[i + 1].x + center.x, points[i + 1].y + center.y);
+		rlTexCoord2f(texcoords[i + 1].x, texcoords[i + 1].y);
+		rlVertex2f(points[i + 1].x + center.x, points[i + 1].y + center.y);
 
-            rlTexCoord2f(texcoords[i + 1].x, texcoords[i + 1].y);
-            rlVertex2f(points[i + 1].x + center.x, points[i + 1].y + center.y);
-        }
-    rlEnd();
-
-    rlSetTexture(0);
+		rlTexCoord2f(texcoords[i + 1].x, texcoords[i + 1].y);
+		rlVertex2f(points[i + 1].x + center.x, points[i + 1].y + center.y);
+	}
+	rlEnd();
+	rlSetTexture(0);
 }
 
 void meshDraw(t_mesh *mesh, Bone *root, int time)
@@ -515,8 +522,24 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
 				sourceRect.y = cut_y * texture.height - (sourceRect.height - (cut_yb - cut_y) * 
 						texture.height) / 2.0f;
 				break;
-case 5:
-    /*/ Efecto viento: oscilación basada en el tiempo
+			case 5:
+				float windStrength = sin(GetTime() * 0.5f);
+				float offset = windStrength * 0.2f;
+				sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.05f *
+						sin(GetTime() * 2.0f * PI));
+				sourceRect.height = (cut_yb - cut_y) * texture.height * (1.0f + 0.05f * 
+						sin(GetTime() * 2.0f * PI));
+				sourceRect.x = cut_x * texture.width;
+				sourceRect.y = cut_y * texture.height - (sourceRect.height - (cut_yb - cut_y) *
+						texture.height);
+				sourceRect.x += offset;
+				destRect.x = trfrmedPos.x;
+				destRect.y = trfrmedPos.y;
+				destRect.width = 100.0f * scaleFactor;
+				destRect.height = 100.0f * scaleFactor;
+				break;
+    /* 
+	// Efecto viento: oscilación basada en el tiempo
     float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
     float offset = windStrength * 0.2f;  // Aumento del desplazamiento
 
@@ -543,15 +566,16 @@ case 5:
     sourceRect.x = cut_x * texture.width;
     sourceRect.width = (cut_xb - cut_x) * texture.width;
     // Aplica el desplazamiento a la textura en el eje X, manteniendo la parte superior izquierda fija
-    sourceRect.x += offset; // Desplazamos solo la parte inferior, mientras que la parte superior izquierda se mantiene fija
-    sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.05f * sin(GetTime() * 0.5f * PI));
+    sourceRect.x += offset;
+    
+	sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.05f * sin(GetTime() * 0.5f * PI));
     sourceRect.height = (cut_yb - cut_y) * texture.height; // Mantener la altura sin cambio
     destRect.x = trfrmedPos.x;
     destRect.y = trfrmedPos.y;
     destRect.width = 100.0f * scaleFactor;
     destRect.height = 100.0f * scaleFactor;
 *
-	    float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
+	float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
     float offset = windStrength * 0.2f;  // Magnitud del desplazamiento
 
     // Mantén la esquina inferior derecha fija
@@ -571,29 +595,6 @@ case 5:
     destRect.width = 100.0f * scaleFactor;
     destRect.height = 100.0f * scaleFactor;
 */
-    // Efecto viento: oscilación basada en el tiempo
-    float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
-    float offset = windStrength * 0.2f;  // Magnitud del desplazamiento
-
-    // Mantén la esquina inferior izquierda fija
-    sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.05f * sin(GetTime() * 2.0f * PI));
-    sourceRect.height = (cut_yb - cut_y) * texture.height * (1.0f + 0.05f * sin(GetTime() * 2.0f * PI));
-
-    // Ajusta el origen de expansión para que la esquina inferior izquierda quede fija
-    sourceRect.x = cut_x * texture.width;  // Mantén el borde izquierdo fijo
-    sourceRect.y = cut_y * texture.height - (sourceRect.height - (cut_yb - cut_y) * texture.height);
-
-    // Desplazamiento horizontal basado en el viento
-    sourceRect.x += offset;
-
-    // Configura el rectángulo de destino como siempre
-    destRect.x = trfrmedPos.x;
-    destRect.y = trfrmedPos.y;
-    destRect.width = 100.0f * scaleFactor;
-    destRect.height = 100.0f * scaleFactor;
-
-    break;
-
 			default:
 				break;
 		}
@@ -660,7 +661,6 @@ void animationLoadKeyframes(const char *path, Bone *root)
 	}
 	fclose(file);
 }
-
 
 void meshLoadData(char *file, t_mesh *mesh, Bone *root)
 {

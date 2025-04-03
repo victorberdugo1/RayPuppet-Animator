@@ -21,84 +21,90 @@ t_mesh		mesh;
 
 int main(void)
 {
-	SetTraceLogLevel(LOG_NONE);
-	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "RayPuppet");
-	SetWindowState(FLAG_WINDOW_RESIZABLE);
-	MaximizeWindow();
-	camera.target = (Vector2){ 0.0f, 0.0f };
-	camera.rotation = 0.0f;
-	camera.zoom = 1.0f;
-	SetTargetFPS(60);
-	//rlEnableDepthTest();
-	//rlEnableColorBlend();
+    SetTraceLogLevel(LOG_NONE);
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "RayPuppet");
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
+    MaximizeWindow();
+    camera.target = (Vector2){ 0.0f, 0.0f };
+    camera.rotation = 0.0f;
+    camera.zoom = 1.0f;
+    SetTargetFPS(60);
+    //rlEnableDepthTest();
+    //rlEnableColorBlend();
+    /*
+    root = boneLoadStructure("Eldwin/Eldwin.txt");
+    root->x = GetScreenWidth() / 2.0f;
+    root->y = GetScreenHeight() / 1.1f;
+    meshLoadData("Eldwin/EldwinMesh.txt", &mesh, root);
+    LoadTextures(&mesh);
+    animationLoadKeyframes("Eldwin/EldwinAnim.txt", root);
+    */
+    static char fileName[256];
+    char command[256];
+
+    snprintf(command, sizeof(command), "zenity --file-selection --title=\"Select File\"");
+    FILE *fp = popen(command, "r");
+    if (fp == NULL)
+        return -1;
+    fgets(fileName, sizeof(fileName), fp);
+    fileName[strcspn(fileName, "\n")] = 0;
+    pclose(fp);
 	
-	//root = boneLoadStructure("Sez/Sez.txt");
-	//root->x = GetScreenWidth() / 2.0f;
-	//root->y = GetScreenHeight() / 1.1f;
-	//meshLoadData("Sez/SezMesh.txt", &mesh, root);
-	//LoadTextures(mesh.vertexCount);
-	//animationLoadKeyframes("Sez/SezAnim.txt", root);
+    //printf("%s", fileName);
+    
+    char baseName[256];
+    strcpy(baseName, fileName);
+    char *dot = strrchr(baseName, '.');
+    if (dot) *dot = '\0';
+
+	char skeletonPath[256], meshPath[256], animPath[256];
+	snprintf(skeletonPath, sizeof(skeletonPath), "%s", fileName);
+	snprintf(meshPath, sizeof(meshPath), "%.*sMesh.txt",
+			(int)(sizeof(meshPath) - strlen("Mesh.txt") - 1), baseName);
+	snprintf(animPath, sizeof(animPath), "%.*sAnim.txt",
+			(int)(sizeof(animPath) - strlen("Anim.txt") - 1), baseName);
+    
+    root = boneLoadStructure(skeletonPath);
+    meshLoadData(meshPath, &mesh, root);
+    LoadTextures(&mesh);
+    animationLoadKeyframes(animPath, root);
 	
-
-	static char	fileName[128];
-	char		command[256];
-
-	snprintf(command, sizeof(command), "zenity --file-selection --title=\"Select File\"");
-	FILE *fp = popen(command, "r");
-	if (fp == NULL)
-		return -1;
-	fgets(fileName, sizeof(fileName), fp);
-	fileName[strcspn(fileName, "\n")] = 0;
-	pclose(fp);
-	printf("%s", fileName);
-	char baseName[128];
-	strcpy(baseName, fileName);
-	char *dot = strrchr(baseName, '.');
-	if (dot) *dot = '\0'; 
-	char skeletonPath[128], meshPath[128], animPath[128];
-	sprintf(skeletonPath, "%s", fileName);
-	sprintf(meshPath, "%sMesh.txt", baseName);
-	sprintf(animPath, "%sAnim.txt", baseName);
-	root = boneLoadStructure(skeletonPath);
-	meshLoadData(meshPath, &mesh, root);
-	LoadTextures(mesh.vertexCount);
-	animationLoadKeyframes(animPath, root);
-
-	root->x = GetScreenWidth() / 2.0f;
-	root->y = GetScreenHeight() / 1.1f;
+    root->x = GetScreenWidth() / 2.0f;
+    root->y = GetScreenHeight() / 1.1f;
 
     frameNum = 0;
-	InitializeGUI();
+    InitializeGUI();
 
     while (!WindowShouldClose())
     {
-		int windowWidth = GetScreenWidth();
+        int windowWidth = GetScreenWidth();
         int windowHeight = GetScreenHeight();
 
         camera.offset = (Vector2){ 0.0f, 0.0f };
-		float zoomX = (float)windowWidth / (float)SCREEN_WIDTH;
+        float zoomX = (float)windowWidth / (float)SCREEN_WIDTH;
         float zoomY = (float)windowHeight / (float)SCREEN_HEIGHT;
         camera.zoom = (zoomX < zoomY) ? zoomX : zoomY;
 
-		BeginDrawing();
-		ClearBackground(GRAY);		
-		
-		DrawGUI();
-		keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
-		UpdateGUI();
-		
-		BeginMode2D(camera);
-		if(!openFile)
-			meshDraw(&mesh, root, frameNum);
+        BeginDrawing();
+        ClearBackground(GRAY);        
+        
+        DrawGUI();
+        keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
+        UpdateGUI();
+        
+        BeginMode2D(camera);
+        if(!openFile)
+            meshDraw(&mesh, root, frameNum);
         DrawBones(root, drawBones);
-		EndMode2D();
-		
-		if(animMode)
-			mouseAnimate(currentBone, frameNum);
-		else
-			DrawOnTop(currentBone, frameNum);
-		EndDrawing();
-	}
-	CloseWindow();
-	return 0;
+        EndMode2D();
+        
+        if(animMode)
+            mouseAnimate(currentBone, frameNum);
+        else
+            DrawOnTop(currentBone, frameNum);
+        EndDrawing();
+    }
+    CloseWindow();
+    return 0;
 }
+

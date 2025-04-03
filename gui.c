@@ -6,14 +6,17 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2024/12/15 13:54:03 by victor           ###   ########.fr       */
+/*   Updated: 2025/04/03 19:54:32 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config.h"
 #include "bones.h"
 #include "gui.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 extern Bone*	currentBone;
 extern Bone*	bones[MAX_BONES];
@@ -45,11 +48,6 @@ bool				hideSlide = false;
 float				newLength,newAngle;
 int					keyframeIndex = -1;
     
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 bool HandleDirectionChange(int newDirection, int maxTime)
 {
 	if (newDirection != direction)
@@ -332,6 +330,17 @@ void DrawOnTop(Bone* bone, int time)
 						bone->keyframe[i].partex = gridX + gridY * gridSize;
 						showTexture = false;
 						textureJustClosed = true;
+						// mueve un frame adelante para animar (no me gusta)
+						HandleDirectionChange(1, maxTime);
+						if (tempValuesSet)
+							HandleDirectionChange(-1, maxTime);
+						frameNum++;
+						if (frameNum > maxTime)
+							frameNum = 0;
+						boneAnimate(root, frameNum);
+						frameNumFloat = frameNum;
+						if (tempValuesSet)
+							ResetBoneToOriginalState(currentBone);
 					}
 		}
 		for (int y = 0; y < gridSize; y++)
@@ -398,8 +407,8 @@ void DrawOnTop(Bone* bone, int time)
 		};
 		int activeOption = bone->keyframe[keyframeIndex].coll; 
 		static bool dropBoxEditMode = false;
-//		const char *options = "#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3";
-		const char *options = "#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3;#53#Breathing 4;#34#Wind 5";
+		const char *options = 
+			"#13#Normal 0;#39#Mirror 1;#06#Upside 2;#58#Flipped 3;#53#Breathing 4;#34#Wind 5";
 
 		// Dibujar el DropBox
 		if (keyframeIndex != -1)
@@ -517,6 +526,7 @@ void InitializeGUI(void)
 		for (int j = 0; j < currentBone->keyframeCount; j++)
 			if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
 				isKeyframe[currentBone->keyframe[j].time] = true;
+	boneAnimate(root, ++frameNum);
 }
 
 void DrawGUI(void)
@@ -601,7 +611,7 @@ void DrawGUI(void)
 				for (int j = 0; j <= selectedBone; j++)
 					if (bones[j] != NULL && bones[j]->keyframe[0].partex > -1)
 						textureCount++;
-				selectedTexture = textures[textureCount];
+				selectedTexture = textures[textureCount -1];//check
 				showTexture = true;
 			}
 			else
@@ -675,13 +685,17 @@ Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
 	}
 	char *filePath = SelectFile();
     if (!filePath)
+	{
         return NULL;
-
-    char baseName[128], folderName[128];
-    strcpy(baseName, filePath);
-    char *dot = strrchr(baseName, '.');
-    if (dot)
-        *dot = '\0';
+	}
+	char baseName[128], folderName[128];
+	strncpy(baseName, filePath, sizeof(baseName) - 1);
+	baseName[sizeof(baseName) - 1] = '\0'; 
+	char *dot = strrchr(baseName, '.');
+	if (dot)
+	{
+		*dot = '\0';
+	}
     const char *lastSlash = strrchr(filePath, '/');
     if (lastSlash)
 	{
@@ -692,15 +706,15 @@ Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
 	{
         strcpy(folderName, ".");
 	}
-    char skeletonPath[128], meshPath[128], animPath[128];
-    sprintf(skeletonPath, "%s", filePath);
-	sprintf(meshPath, "%sMesh.txt", baseName);
-	sprintf(animPath, "%sAnim.txt", baseName);
+	char skeletonPath[256], meshPath[256], animPath[256];
+	sprintf(skeletonPath, "%s", filePath);
+	snprintf(meshPath, sizeof(meshPath), "%sMesh.txt", baseName);
+	snprintf(animPath, sizeof(animPath), "%sAnim.txt", baseName);
 
 	root = boneLoadStructure(skeletonPath);
 
 	meshLoadData(meshPath, mesh, root);
-	LoadTextures(mesh->vertexCount);
+	LoadTextures(mesh);
 
 	boneCleanAnimation(root, animPath);
 	animationLoadKeyframes(animPath, root);

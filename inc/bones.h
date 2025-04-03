@@ -90,7 +90,7 @@ Bone* boneLoadStructure(const char *path);
 Bone* boneAddChild(Bone *root, float x, float y, float a, float l, uint8_t flags, char *name);
 void DrawBones(Bone *root, bool drawBonesEnabled);
 void meshLoadData(char *file, t_mesh *mesh, Bone *root);
-void LoadTextures(int count);
+void LoadTextures(t_mesh *mesh);
 Matrix GetBoneMatrix(Bone *bone);
 void getPartTexture(int tex,int contTxt);
 float getBoneAngle(Bone* b);
