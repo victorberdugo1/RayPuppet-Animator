@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2025/04/03 19:54:32 by victor           ###   ########.fr       */
+/*   Updated: 2025/04/04 11:17:50 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -495,13 +495,18 @@ void UpdateGUI(void)
 
 static void LoadBonesBoxRecursive(Bone* bone, Bone* bones[], int* index, int* count)
 {
-	if (*index >= MAX_BONES)
-		return;
-	bones[*index] = bone;
-	(*index)++;
-	(*count)++;
-	for (int i = 0; i < bone->childCount; i++)
-		LoadBonesBoxRecursive(bone->child[i], bones, index, count);
+    if (*index >= MAX_BONES || !bone)
+        return;
+
+    // Añadir solo si el hueso es válido
+    bones[(*index)++] = bone;
+    (*count)++;
+
+    for (int i = 0; i < bone->childCount; i++) {
+        if (bone->child[i] != NULL) {  // Validar hijo no nulo
+            LoadBonesBoxRecursive(bone->child[i], bones, index, count);
+        }
+    }
 }
 
 void LoadBonesBox(Bone* root, Bone* bones[], int* count)

@@ -74,7 +74,7 @@ extern float cut_x;
 extern float cut_y;
 extern float cut_xb;
 extern float cut_yb;
-extern Texture2D textures[];
+extern Texture2D *textures;
 extern int contTxt;
 /* Function declarations */
 Bone* boneFreeTree(Bone *root);

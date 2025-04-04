@@ -68,7 +68,6 @@ int main(void)
     meshLoadData(meshPath, &mesh, root);
     LoadTextures(&mesh);
     animationLoadKeyframes(animPath, root);
-	
     root->x = GetScreenWidth() / 2.0f;
     root->y = GetScreenHeight() / 1.1f;
 

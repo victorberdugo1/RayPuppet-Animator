@@ -8,12 +8,13 @@
 
 char		*currentName = NULL;
 BonesXY		bonesdata[MAX_BONECOUNT];
-Texture2D	textures[20];
 int			coordenada;
 int			contTxt;
 float		cut_x,cut_y,cut_xb,cut_yb;
 char		nameFTx[99];
 uint32_t	maxTime = 0;
+Texture2D	*textures = NULL;
+int			maxTextureIndex = -1;
 
 Bone*	boneFreeTree(Bone *root)
 {
@@ -340,34 +341,38 @@ void DrawBones(Bone *root, bool drawBonesEnabled)
     }
 }
 
-void LoadTextures(t_mesh *mesh)
-{
+void LoadTextures(t_mesh *mesh) {
     char path[512];
     char resultPath[512];
-    int len;
 
+    maxTextureIndex = -1;
+    for (int i = 0; i < mesh->vertexCount; i++) {
+        if (mesh->v[i].t > maxTextureIndex) {
+            maxTextureIndex = mesh->v[i].t;
+        }
+    }
+    if (maxTextureIndex == -1) {
+        printf("Error: No hay índices de textura válidos\n");
+        return;
+    }
+    textures = (Texture2D *)calloc(maxTextureIndex + 1, sizeof(Texture2D));
+    
     snprintf(resultPath, sizeof(resultPath), "%s/Textures/%s", nameFTx, nameFTx);
-
-    for (int i = 0; i <= mesh->vertexCount; i++)
-    {
-        //if (textures[i] != NULL)
-          //  continue;
-        len = snprintf(path, sizeof(path), "%s_%d.png", resultPath, mesh->v[i].t);
-        if (len < 0 || len >= sizeof(path))
-        {
-            printf("Failed to construct full path for texture %d\n", mesh->v[i].t);
+    for (int t = 0; t <= maxTextureIndex; t++) {
+        int len = snprintf(path, sizeof(path), "%s_%d.png", resultPath, t);
+        if (len < 0 || len >= sizeof(path)) {
+            printf("Ruta inválida para t=%d\n", t);
             continue;
         }
-        Image image = LoadImage(path);
-        if (image.data == NULL)
-        {
-            printf("Failed to load image: %s\n", path);
-            continue;
+        if (FileExists(path)) {
+            Image image = LoadImage(path);
+            textures[t] = LoadTextureFromImage(image);
+            UnloadImage(image);
+            //printf("Cargada textura t=%d\n", t);
         }
-        textures[i] = LoadTextureFromImage(image);
-        UnloadImage(image);
     }
 }
+
 
 Matrix GetBoneMatrix(Bone *bone)
 {
@@ -560,7 +565,7 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
     destRect.y = trfrmedPos.y;
     destRect.width = 100.0f * scaleFactor;
     destRect.height = 100.0f * scaleFactor;
-*
+
     float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
     float offset = windStrength * 0.2f;  // Aumento del desplazamiento
     sourceRect.x = cut_x * texture.width;
@@ -574,7 +579,7 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
     destRect.y = trfrmedPos.y;
     destRect.width = 100.0f * scaleFactor;
     destRect.height = 100.0f * scaleFactor;
-*
+
 	float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
     float offset = windStrength * 0.2f;  // Magnitud del desplazamiento
 
@@ -644,8 +649,10 @@ void animationLoadKeyframes(const char *path, Bone *root)
 			sscanf(token, "%f", &length);
 			if (bone->keyframeCount >= MAX_KFCOUNT)
 			{
-				fprintf(stderr, "Warning: Keyframe count exceeded for bone %s\n", name);
-				continue;
+				bone->keyframeCount = 0;
+				//printf("%d",bone->keyframeCount );
+				//fprintf(stderr, "Warning: Keyframe count exceeded for bone %s\n", name);
+				//continue;
 			}
 			Keyframe *k = &(bone->keyframe[bone->keyframeCount]);
 			k->time = time;
