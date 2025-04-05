@@ -1,4 +1,4 @@
-NAME = bones
+NAME = raypup
 
 LIB = libraylib.a
 
