@@ -438,13 +438,13 @@ int compareVerticesByLayer(const void *a, const void *b) {
     const BoneVertex *vertA = (const BoneVertex *)a;
     const BoneVertex *vertB = (const BoneVertex *)b;
 
-    if (!vertA->bone[0] || !vertB->bone[0] || 
-        vertA->bone[0]->frame >= vertA->bone[0]->keyframeCount ||
-        vertB->bone[0]->frame >= vertB->bone[0]->keyframeCount) {
+    if (!vertA->bone[0] || !vertB->bone[0]) {
         return 0;
     }
-    int layerA = vertA->bone[0]->keyframe[vertA->bone[0]->frame].layer;
-    int layerB = vertB->bone[0]->keyframe[vertB->bone[0]->frame].layer;
+
+    int layerA = vertA->bone[0]->depth;
+    int layerB = vertB->bone[0]->depth;
+
     if (layerA < layerB) return -1;
     if (layerA > layerB) return 1;
     return 0;
@@ -563,63 +563,45 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
 				destRect.width = 100.0f * scaleFactor;
 				destRect.height = 100.0f * scaleFactor;
 				break;
-    /* 
-	// Efecto viento: oscilación basada en el tiempo
-    float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
-    float offset = windStrength * 0.2f;  // Aumento del desplazamiento
+			case 6:
+				float baseWidth = (cut_xb - cut_x) * texture.width;
+				float baseHeight = (cut_yb - cut_y) * texture.height;
 
-    // Mantén el punto superior derecho fijo
-    // Ajustamos la posición en X para simular el movimiento por viento
-    sourceRect.x = cut_x * texture.width;
-    sourceRect.width = (cut_xb - cut_x) * texture.width;
+				float wave = 0.007f * sin(GetTime() * 0.8f * PI);
+				float waveOffset = baseHeight * wave;
 
-    // Aplica el desplazamiento a la textura en el eje X, manteniendo la parte superior derecha fija
-    sourceRect.x -= offset; // Desplazamos solo la parte inferior
+				// RECTÁNGULO DE TEXTURA: fijo
+				sourceRect.x = cut_x * texture.width;
+				sourceRect.y = cut_y * texture.height;
+				sourceRect.width = baseWidth;
+				sourceRect.height = baseHeight;
 
-    // Para el efecto "wind", expandimos la textura ligeramente en la dirección del viento
-    sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.05f * sin(GetTime() * 0.5f * PI));
-    sourceRect.height = (cut_yb - cut_y) * texture.height; // Mantener la altura sin cambio
-
-    // Posiciona la textura en la pantalla
-    destRect.x = trfrmedPos.x;
-    destRect.y = trfrmedPos.y;
-    destRect.width = 100.0f * scaleFactor;
-    destRect.height = 100.0f * scaleFactor;
-
-    float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
-    float offset = windStrength * 0.2f;  // Aumento del desplazamiento
-    sourceRect.x = cut_x * texture.width;
-    sourceRect.width = (cut_xb - cut_x) * texture.width;
-    // Aplica el desplazamiento a la textura en el eje X, manteniendo la parte superior izquierda fija
-    sourceRect.x += offset;
-    
-	sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.05f * sin(GetTime() * 0.5f * PI));
-    sourceRect.height = (cut_yb - cut_y) * texture.height; // Mantener la altura sin cambio
-    destRect.x = trfrmedPos.x;
-    destRect.y = trfrmedPos.y;
-    destRect.width = 100.0f * scaleFactor;
-    destRect.height = 100.0f * scaleFactor;
-
-	float windStrength = sin(GetTime() * 0.5f);  // Desplazamiento basado en el viento
-    float offset = windStrength * 0.2f;  // Magnitud del desplazamiento
-
-    // Mantén la esquina inferior derecha fija
-    sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.05f * sin(GetTime() * 2.0f * PI));
-    sourceRect.height = (cut_yb - cut_y) * texture.height * (1.0f + 0.05f * sin(GetTime() * 2.0f * PI));
-
-    // Ajusta el origen de expansión para que la esquina inferior derecha quede fija
-    sourceRect.x = cut_x * texture.width - (sourceRect.width - (cut_xb - cut_x) * texture.width);
-    sourceRect.y = cut_y * texture.height - (sourceRect.height - (cut_yb - cut_y) * texture.height);
-
-    // Desplazamiento horizontal basado en el viento
-    sourceRect.x += offset;
-
-    // Configura el rectángulo de destino como siempre
-    destRect.x = trfrmedPos.x;
-    destRect.y = trfrmedPos.y;
-    destRect.width = 100.0f * scaleFactor;
-    destRect.height = 100.0f * scaleFactor;
-*/
+				// RECTÁNGULO DE DESTINO: se estira hacia arriba
+				destRect.width = 100.0f * scaleFactor;
+				destRect.height = 100.0f * scaleFactor + waveOffset * scaleFactor;
+				destRect.x = trfrmedPos.x;
+				destRect.y = trfrmedPos.y - waveOffset * scaleFactor; 
+				// subirlo para mantener la base fija
+				break;
+			case 7:
+				baseWidth = (cut_xb - cut_x) * texture.width;
+				baseHeight = (cut_yb - cut_y) * texture.height;
+				wave = 0.01f * sin(GetTime() * 2.0f * PI); // Efecto de onda
+				waveOffset = baseHeight * wave; // Desplazamiento vertical
+				// RECTÁNGULO DE TEXTURA: Fijo
+				sourceRect.x = cut_x * texture.width; // Punto 1 se mueve
+				sourceRect.y = cut_y * texture.height; // Punto 3 se mueve
+				sourceRect.width = baseWidth;
+				sourceRect.height = baseHeight;
+				// RECTÁNGULO DE DESTINO: Fijamos el punto 4 (inferior derecho)
+				destRect.width = 100.0f * scaleFactor;
+				destRect.height = 100.0f * scaleFactor; // Punto 4 no cambia
+				destRect.x = trfrmedPos.x; // Punto 1 se mueve
+				destRect.y = trfrmedPos.y - waveOffset * scaleFactor; // Punto 3 se mueve
+				// Ajustamos la posición para que el punto 4 (inferior derecho) permanezca fijo
+				destRect.x -= waveOffset * scaleFactor;
+				// Desplazamos el punto 2 hacia la izquierda
+				break;
 			default:
 				break;
 		}
