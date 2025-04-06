@@ -98,5 +98,6 @@ Vector2 applyBoneMove(Bone *bone, Vector2 vertex);
 int compareVerticesByLayer(const void *a, const void *b);
 void meshDraw(t_mesh *mesh, Bone *root, int time);
 void animationLoadKeyframes(const char *path, Bone *root);
+void UnloadTextures();
 
 #endif

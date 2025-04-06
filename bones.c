@@ -341,6 +341,21 @@ void DrawBones(Bone *root, bool drawBonesEnabled)
     }
 }
 
+void UnloadTextures(void)
+{
+    if (textures)
+    {
+        for (int i = 0; i <= maxTextureIndex; i++)
+        {
+            if (textures[i].id > 0)
+                UnloadTexture(textures[i]);
+        }
+        free(textures);
+        textures = NULL;
+        maxTextureIndex = -1;
+    }
+}
+
 void LoadTextures(t_mesh *mesh) {
     char path[512];
     char resultPath[512];
@@ -419,16 +434,20 @@ Vector2 applyBoneMove(Bone *bone, Vector2 vertex)
 	return transformed;
 }
 
-int compareVerticesByLayer(const void *a, const void *b)
-{
-	const BoneVertex *vertA = (const BoneVertex *)a;
-	const BoneVertex *vertB = (const BoneVertex *)b;
+int compareVerticesByLayer(const void *a, const void *b) {
+    const BoneVertex *vertA = (const BoneVertex *)a;
+    const BoneVertex *vertB = (const BoneVertex *)b;
 
-	int layerA = vertA->bone[0]->keyframe[vertA->bone[0]->frame].layer;
-	int layerB = vertB->bone[0]->keyframe[vertB->bone[0]->frame].layer;
-	if (layerA < layerB) return -1;
-	if (layerA > layerB) return 1;
-	return 0;
+    if (!vertA->bone[0] || !vertB->bone[0] || 
+        vertA->bone[0]->frame >= vertA->bone[0]->keyframeCount ||
+        vertB->bone[0]->frame >= vertB->bone[0]->keyframeCount) {
+        return 0;
+    }
+    int layerA = vertA->bone[0]->keyframe[vertA->bone[0]->frame].layer;
+    int layerB = vertB->bone[0]->keyframe[vertB->bone[0]->frame].layer;
+    if (layerA < layerB) return -1;
+    if (layerA > layerB) return 1;
+    return 0;
 }
 
 void DrawTexturePoly(Texture2D texture, Vector2 center, Vector2 *points, Vector2 *texcoords, int pointCount, Color tint)
@@ -484,6 +503,7 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
 			}
 		}
 		texture = textures[boneVertex->t];
+		//printf("testura %d\n", boneVertex->t );
 		getPartTexture(partex[0],contTxt);
 
 		Rectangle sourceRect = {
@@ -693,6 +713,10 @@ void meshLoadData(char *file, t_mesh *mesh, Bone *root)
 				while (tok && j < 10)
 				{
 					mesh->v[i].bone[j] = boneFindByName(root, tok);
+					if (!mesh->v[i].bone[j]) {
+						fprintf(stderr, "ERROR: Hueso '%s' no encontrado para el vértice %d\n", tok, i);
+						break;
+					}
 					if (mesh->v[i].bone[j])
 					{
 						tok = strtok(NULL, " ");

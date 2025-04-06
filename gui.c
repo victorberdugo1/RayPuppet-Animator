@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2025/04/04 11:17:50 by victor           ###   ########.fr       */
+/*   Updated: 2025/04/06 18:32:00 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -203,9 +203,8 @@ int UpdateBoneProperties(Bone* bone, int time)
 	return 0;
 }
 
-int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, float zoom)
+void GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, float zoom)
 {
-	int textureCount = 0;
 	for (int i = 0; i < boneCount; i++)
 	{
 		if (bones[i]->keyframe[0].partex == -1)
@@ -219,17 +218,9 @@ int GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, flo
 				clickPosition.y >= (centerY - destHeight / 2) &&
 				clickPosition.y <= (centerY + destHeight / 2))
 		{
-			int selectedBoneIndex = i;
-			for (int j = 0; j <= selectedBoneIndex; j++)
-			{
-				if (bones[j]->keyframe[0].partex > -1)
-					textureCount++;
-			}
-			currentBone = bones[selectedBoneIndex];
-			return textureCount;
+			currentBone = bones[i];
 		}          
 	}
-	return -1;
 }
 
 void mouseAnimate(Bone* bone, int time)
@@ -279,7 +270,7 @@ void mouseAnimate(Bone* bone, int time)
 		hideSlide = false;
 }
 	
-void DrawOnTop(Bone* bone, int time)
+void DrawOnTop(Bone* bone,t_mesh* mesh, int time)
 {
 	Vector2	mousePosition;
 
@@ -291,7 +282,7 @@ void DrawOnTop(Bone* bone, int time)
 		return;
 	}
 	//Texturas
-    if (showTexture && selectedTexture.id != 0)
+    if (showTexture && selectedTexture.id != -1)
     {
 		int			gridSize = contTxt; 
 		float		partWidth = (float)selectedTexture.width / gridSize;
@@ -426,13 +417,20 @@ void DrawOnTop(Bone* bone, int time)
 			if (bone->keyframe[i].time == time)
 				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && bone->keyframe[0].partex > -1)
 				{
-					int textureIndex = GetBoneTextureIndex(mousePosition, bones, boneCount, camera.zoom);
-					if (textureIndex > 0)
-						if (textureIndex >= 0 && textureIndex < 20)
+					GetBoneTextureIndex(mousePosition,bones, boneCount, camera.zoom);
+					for (int i = 0; i < mesh->vertexCount; i++)
+					{
+						BoneVertex *boneVertex = &mesh->v[i];
+						for (int j = 0; j < boneVertex->boneCount; j++)
 						{
-							selectedTexture = textures[textureIndex];
-							showTexture = true;
+							Bone *bone = boneVertex->bone[j];
+							if (bone == currentBone){
+								selectedTexture = textures[boneVertex->t];
+							}
 						}
+					}
+
+					showTexture = true;
 				}
 }
 
@@ -534,7 +532,7 @@ void InitializeGUI(void)
 	boneAnimate(root, ++frameNum);
 }
 
-void DrawGUI(void)
+void DrawGUI(t_mesh* mesh)
 {
 	// Toggles
 	float z = camera.zoom;
@@ -612,11 +610,17 @@ void DrawGUI(void)
 						isKeyframe[currentBone->keyframe[j].time] = true;
 			if (showTexture)
 			{
-				int textureCount = 0; 
-				for (int j = 0; j <= selectedBone; j++)
-					if (bones[j] != NULL && bones[j]->keyframe[0].partex > -1)
-						textureCount++;
-				selectedTexture = textures[textureCount -1];//check
+				for (int i = 0; i < mesh->vertexCount; i++)
+				{
+					BoneVertex *boneVertex = &mesh->v[i];
+					for (int j = 0; j < boneVertex->boneCount; j++)
+					{
+						Bone *bone = boneVertex->bone[j];
+						if (bone == bones[selectedBone]) {
+							selectedTexture = textures[boneVertex->t];
+						}
+					}
+				}
 				showTexture = true;
 			}
 			else
@@ -656,7 +660,7 @@ void DrawGUI(void)
 	if (GuiButton((Rectangle){(SCREEN_WIDTH - 70) * z, 7 * z, 50 * z, 30 * z}, "#149#Open"))
 	{
 		openFile = true;
-		root = CleanAndLoadModel(root, &mesh);
+		root = CleanAndLoadModel(root, mesh);
 	}
 	if (GuiButton((Rectangle){20 * z, 10 * z, 50 * z, 30 * z}, "#14#Load"))
 		root = CleanAndLoadAnimation(root);
@@ -675,7 +679,7 @@ void DrawGUI(void)
 	GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
 }
 
-Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
+Bone* CleanAndLoadModel(Bone *root, t_mesh *mesh)
 {
     if (!root)
 	{
@@ -719,6 +723,8 @@ Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh)
 	root = boneLoadStructure(skeletonPath);
 
 	meshLoadData(meshPath, mesh, root);
+	
+	UnloadTextures();
 	LoadTextures(mesh);
 
 	boneCleanAnimation(root, animPath);

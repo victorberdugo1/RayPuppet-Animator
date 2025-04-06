@@ -31,14 +31,15 @@ int main(void)
     SetTargetFPS(60);
     //rlEnableDepthTest();
     //rlEnableColorBlend();
-    /*
+    
     root = boneLoadStructure("Eldwin/Eldwin.txt");
     root->x = GetScreenWidth() / 2.0f;
     root->y = GetScreenHeight() / 1.1f;
     meshLoadData("Eldwin/EldwinMesh.txt", &mesh, root);
     LoadTextures(&mesh);
     animationLoadKeyframes("Eldwin/EldwinAnim.txt", root);
-    */
+    
+	/*
     static char fileName[256];
     char command[256];
 
@@ -68,6 +69,7 @@ int main(void)
     meshLoadData(meshPath, &mesh, root);
     LoadTextures(&mesh);
     animationLoadKeyframes(animPath, root);
+	*/
     root->x = GetScreenWidth() / 2.0f;
     root->y = GetScreenHeight() / 1.1f;
 
@@ -87,7 +89,7 @@ int main(void)
         BeginDrawing();
         ClearBackground(GRAY);        
         
-        DrawGUI();
+        DrawGUI(&mesh);
         keyframeStatus = UpdateBoneProperties(currentBone, frameNum);
         UpdateGUI();
         
@@ -100,7 +102,7 @@ int main(void)
         if(animMode)
             mouseAnimate(currentBone, frameNum);
         else
-            DrawOnTop(currentBone, frameNum);
+            DrawOnTop(currentBone, &mesh, frameNum);
         EndDrawing();
     }
     CloseWindow();

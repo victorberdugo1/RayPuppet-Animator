@@ -17,8 +17,8 @@ extern Camera2D	camera;
 // Declaración de funciones
 void	InitializeGUI(void);
 void	UpdateGUI(void);
-void	DrawGUI(void);
-void	DrawOnTop(Bone* bone, int time);
+void	DrawGUI(t_mesh *mesh);
+void	DrawOnTop(Bone* bone,t_mesh* mesh, int time);
 void	mouseAnimate(Bone* bone, int time);
 int		UpdateBoneProperties(Bone* bone, int time);
 Bone* CleanAndLoadModel(Bone *root, t_mesh* mesh);
