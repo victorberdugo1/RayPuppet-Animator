@@ -538,10 +538,10 @@ void meshDraw(t_mesh *mesh, Bone *root, int time)
 				sourceRect.width *= -1;
 				break;
 			case 4:
-				sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.02f *
-						sin(GetTime() * 2.0f * PI));
-				sourceRect.height = (cut_yb - cut_y) * texture.height * (1.0f + 0.02f *
-						sin(GetTime() * 2.0f * PI));
+				sourceRect.width = (cut_xb - cut_x) * texture.width * (1.0f + 0.01f *
+						sin(GetTime() * 0.8f * PI));
+				sourceRect.height = (cut_yb - cut_y) * texture.height * (1.0f + 0.01f *
+						sin(GetTime() * 0.8f * PI));
 				sourceRect.x = cut_x * texture.width - (sourceRect.width - (cut_xb - cut_x) * 
 						texture.width) / 2.0f;
 				sourceRect.y = cut_y * texture.height - (sourceRect.height - (cut_yb - cut_y) * 
