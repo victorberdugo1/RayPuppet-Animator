@@ -15,7 +15,7 @@ CC = cc
 
 CFLAGS = -Wall -I$(INC_DIR)
 
-LDFLAGS = -L. -lraylib -lm -ldl -lpthread -lGL -lX11 #-g -fsanitize=address -fsanitize=leak
+LDFLAGS = -L. -lraylib -lm -ldl -lpthread -lGL -lX11 -g -fsanitize=address -fsanitize=leak
 
 all: $(NAME)
 
