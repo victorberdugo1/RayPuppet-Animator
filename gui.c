@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2025/04/06 18:32:00 by victor           ###   ########.fr       */
+/*   Updated: 2025/04/13 19:41:37 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,10 @@ int					layerValue = 0;
 bool				hideSlide = false;
 float				newLength,newAngle;
 int					keyframeIndex = -1;
-    
+static double		lastClickTime = 0;
+static int			lastClickedBoneIndex = -1;    
+
+
 bool HandleDirectionChange(int newDirection, int maxTime)
 {
 	if (newDirection != direction)
@@ -203,26 +206,6 @@ int UpdateBoneProperties(Bone* bone, int time)
 	return 0;
 }
 
-void GetBoneTextureIndex(Vector2 clickPosition, Bone* bones[], int boneCount, float zoom)
-{
-	for (int i = 0; i < boneCount; i++)
-	{
-		if (bones[i]->keyframe[0].partex == -1)
-			continue;
-		float destWidth = 100.0f * zoom;
-		float destHeight = 100.0f * zoom;
-		float centerX = bones[i]->x * zoom;
-		float centerY = bones[i]->y * zoom;
-		if (clickPosition.x >= (centerX - destWidth / 2) &&
-				clickPosition.x <= (centerX + destWidth / 2) &&
-				clickPosition.y >= (centerY - destHeight / 2) &&
-				clickPosition.y <= (centerY + destHeight / 2))
-		{
-			currentBone = bones[i];
-		}          
-	}
-}
-
 void mouseAnimate(Bone* bone, int time)
 {
 	if (bone == NULL)
@@ -275,12 +258,9 @@ void DrawOnTop(Bone* bone,t_mesh* mesh, int time)
 	Vector2	mousePosition;
 
 	mousePosition = GetMousePosition();
-	if (textureJustClosed)
-	{
-		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
-			textureJustClosed = false;
-		return;
-	}
+    if (textureJustClosed && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        textureJustClosed = false;
+    }
 	//Texturas
     if (showTexture && selectedTexture.id != -1)
     {
@@ -411,27 +391,6 @@ void DrawOnTop(Bone* bone,t_mesh* mesh, int time)
 			}
 		GuiSetStyle(DEFAULT, TEXT_SIZE, originalTextSize);
 	}
-
-	if (!textureJustClosed)
-		for (int i = 0; i < bone->keyframeCount; i++)
-			if (bone->keyframe[i].time == time)
-				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && bone->keyframe[0].partex > -1)
-				{
-					GetBoneTextureIndex(mousePosition,bones, boneCount, camera.zoom);
-					for (int i = 0; i < mesh->vertexCount; i++)
-					{
-						BoneVertex *boneVertex = &mesh->v[i];
-						for (int j = 0; j < boneVertex->boneCount; j++)
-						{
-							Bone *bone = boneVertex->bone[j];
-							if (bone == currentBone){
-								selectedTexture = textures[boneVertex->t];
-							}
-						}
-					}
-
-					showTexture = true;
-				}
 }
 
 void UpdateGUI(void)
@@ -592,6 +551,34 @@ void DrawGUI(t_mesh* mesh)
 		GuiButton(buttonRect, bones[i]->name);
 		if (GuiGetState() == STATE_NORMAL && GuiButton(buttonRect, bones[i]->name))
 		{
+			// Manejo de doble click textura
+			double currentTime = GetTime();
+			if (currentTime - lastClickTime < 0.3 && lastClickedBoneIndex == i)
+			{
+				if (bones[i]->keyframe[0].partex != -1)
+				{
+					showTexture = !showTexture;
+					if (showTexture)
+					{
+						for (int j = 0; j < mesh->vertexCount; j++)
+						{
+							BoneVertex *boneVertex = &mesh->v[j];
+							for (int k = 0; k < boneVertex->boneCount; k++)
+							{
+								Bone *bone = boneVertex->bone[k];
+								if (bone == bones[i]) 
+								{
+									selectedTexture = textures[boneVertex->t];
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+			lastClickTime = currentTime;
+			lastClickedBoneIndex = i;
+			
 			if (tempValuesSet)
 			{
 				HandleDirectionChange(1, maxTime);
@@ -608,23 +595,6 @@ void DrawGUI(t_mesh* mesh)
 				for (int j = 0; j < currentBone->keyframeCount; j++)
 					if (currentBone->keyframe[j].time >= 0 && currentBone->keyframe[j].time <= maxTime)
 						isKeyframe[currentBone->keyframe[j].time] = true;
-			if (showTexture)
-			{
-				for (int i = 0; i < mesh->vertexCount; i++)
-				{
-					BoneVertex *boneVertex = &mesh->v[i];
-					for (int j = 0; j < boneVertex->boneCount; j++)
-					{
-						Bone *bone = boneVertex->bone[j];
-						if (bone == bones[selectedBone]) {
-							selectedTexture = textures[boneVertex->t];
-						}
-					}
-				}
-				showTexture = true;
-			}
-			else
-				showTexture = false;
 		}
 		visibleButtonIndex++;
 	}

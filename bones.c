@@ -32,7 +32,7 @@ void	boneDumpAnim(Bone *root, uint8_t level)
 		return;
 	printf("%s ", root->name);
 	for (int f = 0; f < root->keyframeCount; f++)
-		printf("%i %d %i %i %3.1f %3.1f ", root->keyframe[f].time, 
+		printf("%i %d %i %i %3.3f %3.1f ", root->keyframe[f].time, 
 				root->keyframe[f].partex, root->keyframe[f].layer, 
 				root->keyframe[f].coll, root->keyframe[f].angle, 
 				root->keyframe[f].length);
