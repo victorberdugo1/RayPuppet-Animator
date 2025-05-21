@@ -105,6 +105,7 @@ int main(void)
             DrawOnTop(currentBone, &mesh, frameNum);
         EndDrawing();
     }
+	boneFreeTree(root);
     CloseWindow();
     return 0;
 }

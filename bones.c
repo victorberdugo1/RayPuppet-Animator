@@ -16,14 +16,17 @@ uint32_t	maxTime = 0;
 Texture2D	*textures = NULL;
 int			maxTextureIndex = -1;
 
-Bone*	boneFreeTree(Bone *root)
+Bone* boneFreeTree(Bone *root)
 {
-	if (!root)
-		return (NULL);
-	for (int i = 0; i < root->childCount; i++)
-		boneFreeTree(root->child[i]);
-	free(root);
-	return (NULL);
+    if (!root) return NULL;
+    
+    for (int i = 0; i < root->childCount; i++) {
+        if (root->child[i]) {
+            root->child[i] = boneFreeTree(root->child[i]); 
+		}
+    }
+    free(root);
+    return NULL;
 }
 
 void	boneDumpAnim(Bone *root, uint8_t level)

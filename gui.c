@@ -6,7 +6,7 @@
 /*   By: victor <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 11:30:36 by victor            #+#    #+#             */
-/*   Updated: 2025/04/13 19:41:37 by victor           ###   ########.fr       */
+/*   Updated: 2025/05/21 18:21:18 by victor           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,6 @@ float				newLength,newAngle;
 int					keyframeIndex = -1;
 static double		lastClickTime = 0;
 static int			lastClickedBoneIndex = -1;    
-
 
 bool HandleDirectionChange(int newDirection, int maxTime)
 {
@@ -631,6 +630,14 @@ void DrawGUI(t_mesh* mesh)
 	{
 		openFile = true;
 		root = CleanAndLoadModel(root, mesh);
+		    selectedBone = 0;
+    currentBone  = root;
+    frameNum     = 0;
+    frameNumFloat = 0.0f;
+    tempValuesSet = false;
+    hideSlide     = false;
+    forwAnim = revAnim = false;
+    InitializeGUI();
 	}
 	if (GuiButton((Rectangle){20 * z, 10 * z, 50 * z, 30 * z}, "#14#Load"))
 		root = CleanAndLoadAnimation(root);
